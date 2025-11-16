@@ -1,0 +1,170 @@
+{
+  "version": "2025-11-17",
+  "updated": "2025-11-17T00:00:00Z",
+  "description": "Global call recording legal requirements database",
+  "countries": {
+    "JP": {
+      "type": "one_party",
+      "note": "日本: 原則一方同意で録音可能。ただし利用目的と通知を明示すること。",
+      "legal_basis": "個人情報保護法",
+      "requires_disclosure": true
+    },
+    "US": {
+      "type": "varies",
+      "note": "米国: 州別に異なる。発信者の州を判定して処理すること。"
+    },
+    "US-CA": {
+      "type": "all_party",
+      "note": "カリフォルニア州: 全員の同意（two-party/all-party rule）が必須",
+      "legal_basis": "California Penal Code § 632",
+      "requires_disclosure": true
+    },
+    "US-TX": {
+      "type": "one_party",
+      "note": "テキサス州: 一方同意で許容される",
+      "legal_basis": "Texas Penal Code § 16.02",
+      "requires_disclosure": false
+    },
+    "US-NY": {
+      "type": "one_party",
+      "note": "ニューヨーク州: 一方同意で許容される",
+      "legal_basis": "New York Penal Law § 250.00",
+      "requires_disclosure": false
+    },
+    "US-FL": {
+      "type": "all_party",
+      "note": "フロリダ州: 事例により全員同意の解釈あり。弁護士確認推奨。",
+      "legal_basis": "Florida Statute § 934.03",
+      "requires_disclosure": true
+    },
+    "CA": {
+      "type": "all_party",
+      "note": "カナダ: 州により扱いが異なるが全員同意の考えが強い。要確認。",
+      "legal_basis": "Canadian Criminal Code § 184",
+      "requires_disclosure": true
+    },
+    "GB": {
+      "type": "gdpr",
+      "note": "英国: GDPR相当の規律と通知義務。",
+      "legal_basis": "UK GDPR, PECR",
+      "requires_disclosure": true
+    },
+    "EU": {
+      "type": "gdpr",
+      "note": "欧州連合: GDPR に基づき、通知・同意・保持制限が必須。",
+      "legal_basis": "GDPR (EU 2016/679)",
+      "requires_disclosure": true
+    },
+    "DE": {
+      "type": "all_party",
+      "note": "ドイツ: 厳格。法務確認が必須。",
+      "legal_basis": "Strafgesetzbuch § 201",
+      "requires_disclosure": true
+    },
+    "FR": {
+      "type": "gdpr",
+      "note": "フランス: GDPR に準拠。通知と保持制限が重要。",
+      "legal_basis": "French Data Protection Act, GDPR",
+      "requires_disclosure": true
+    },
+    "ES": {
+      "type": "gdpr",
+      "note": "スペイン: GDPR 準拠。",
+      "legal_basis": "GDPR, Spanish LSSI-CE",
+      "requires_disclosure": true
+    },
+    "IT": {
+      "type": "gdpr",
+      "note": "イタリア: GDPR 準拠。",
+      "legal_basis": "GDPR, Italian Privacy Code",
+      "requires_disclosure": true
+    },
+    "NL": {
+      "type": "gdpr",
+      "note": "オランダ: GDPR 準拠。",
+      "legal_basis": "GDPR, Dutch AVG",
+      "requires_disclosure": true
+    },
+    "AU": {
+      "type": "varies",
+      "note": "オーストラリア: 州別により異なる。要確認。",
+      "legal_basis": "Surveillance Devices Act (各州)",
+      "requires_disclosure": true
+    },
+    "NZ": {
+      "type": "one_party",
+      "note": "ニュージーランド: 一方同意で運用可能。",
+      "legal_basis": "Crimes Act 1961",
+      "requires_disclosure": false
+    },
+    "CN": {
+      "type": "restricted",
+      "note": "中国: 技術的・規制上の制約が強い。現地法務必須。",
+      "legal_basis": "Cybersecurity Law, Data Protection Regulations",
+      "requires_disclosure": true
+    },
+    "IN": {
+      "type": "varies",
+      "note": "インド: 規制確認が必要。",
+      "legal_basis": "Indian Telecommunications Act",
+      "requires_disclosure": true
+    },
+    "BR": {
+      "type": "one_party",
+      "note": "ブラジル: 一方同意を許容するケースが多い。",
+      "legal_basis": "Brazilian Law 12,965/2014, LGPD",
+      "requires_disclosure": true
+    },
+    "RU": {
+      "type": "restricted",
+      "note": "ロシア: データ法とローカル要件に注意。",
+      "legal_basis": "Russian Federal Law on Personal Data",
+      "requires_disclosure": true
+    },
+    "ZA": {
+      "type": "varies",
+      "note": "南アフリカ: POPIA 準拠の検討が必要。",
+      "legal_basis": "POPIA, ECA",
+      "requires_disclosure": true
+    },
+    "KR": {
+      "type": "one_party",
+      "note": "韓国: 一方同意だが個人情報取扱に注意。",
+      "legal_basis": "Korean PIPA",
+      "requires_disclosure": true
+    },
+    "SG": {
+      "type": "varies",
+      "note": "シンガポール: PDPA 準拠。",
+      "legal_basis": "PDPA",
+      "requires_disclosure": true
+    },
+    "MX": {
+      "type": "one_party",
+      "note": "メキシコ: 一方同意が多い。",
+      "legal_basis": "Mexican Federal Law on Data Protection",
+      "requires_disclosure": false
+    },
+    "AR": {
+      "type": "varies",
+      "note": "アルゼンチン: 地域で差異あり。",
+      "legal_basis": "Argentine Data Protection Law",
+      "requires_disclosure": true
+    }
+  },
+  "consent_templates": {
+    "one_party_en": "This call will be recorded. By accepting, you consent to the recording.",
+    "one_party_ja": "本通話は録音されます。同意される場合は「同意する」をお選びください。",
+    "all_party_en": "This call will be recorded. Both parties must consent. By accepting, you consent to recording.",
+    "all_party_ja": "本通話は録音されます。双方の同意が必要です。同意される場合は「同意する」をお選びください。",
+    "gdpr_en": "This call will be recorded for quality and record-keeping purposes. We process your data in accordance with GDPR. By accepting, you provide your consent.",
+    "gdpr_ja": "本通話は品質向上と記録保存の目的で録音されます。当機関はGDPRに準拠してあなたのデータを処理します。同意される場合は「同意する」をお選びください。"
+  },
+  "restricted_countries": [
+    "CN",
+    "AE",
+    "SA",
+    "VN"
+  ],
+  "notes": "This database is maintained and updated regularly. Last updated: 2025-11-17. For legal questions, consult local legal counsel."
+}

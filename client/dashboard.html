@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebRTC Call Recorder - Telemetry Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    .auth-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .auth-input {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .auth-input input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .auth-input button {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .auth-input button:hover {
+      background: #5568d3;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      margin-bottom: 15px;
+      font-size: 18px;
+      color: #333;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .metric:last-child {
+      border-bottom: none;
+    }
+    .metric-label {
+      font-weight: 500;
+    }
+    .metric-value {
+      color: #667eea;
+      font-weight: bold;
+    }
+    canvas {
+      max-height: 300px;
+    }
+    .logs {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .log-entry {
+      padding: 10px;
+      border-left: 4px solid #667eea;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .log-time {
+      color: #999;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎙️ WebRTC Call Recorder - Telemetry Dashboard</h1>
+    <p>Real-time analytics & monitoring</p>
+  </header>
+
+  <div class="container">
+    <!-- Authentication Section -->
+    <div class="auth-section">
+      <div class="auth-input">
+        <input type="text" id="usernameInput" placeholder="Username" value="admin" />
+        <input type="password" id="passwordInput" placeholder="Password" value="admin123" />
+        <button onclick="login()">Login</button>
+      </div>
+      <div id="authStatus" class="status disconnected">
+        ❌ Disconnected
+      </div>
+    </div>
+
+    <!-- Dashboard (Hidden until authenticated) -->
+    <div id="dashboard" style="display: none;">
+      <div class="dashboard">
+        <!-- Events by Type -->
+        <div class="card">
+          <h2>Events by Type (24h)</h2>
+          <canvas id="eventsByTypeChart"></canvas>
+        </div>
+
+        <!-- Region Distribution -->
+        <div class="card">
+          <h2>Region Distribution</h2>
+          <canvas id="regionChart"></canvas>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="card">
+          <h2>Key Metrics</h2>
+          <div class="metric">
+            <span class="metric-label">Total Events (24h)</span>
+            <span class="metric-value" id="totalEvents">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Unique Regions</span>
+            <span class="metric-value" id="uniqueRegions">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Active Connections</span>
+            <span class="metric-value" id="activeConnections">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Last Update</span>
+            <span class="metric-value" id="lastUpdate">-</span>
+          </div>
+        </div>
+
+        <!-- OS Distribution -->
+        <div class="card">
+          <h2>OS Distribution</h2>
+          <div class="metric">
+            <span class="metric-label">Android</span>
+            <span class="metric-value" id="countAndroid">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">iOS</span>
+            <span class="metric-value" id="countIOS">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Web</span>
+            <span class="metric-value" id="countWeb">0</span>
+          </div>
+        </div>
+
+        <!-- App Versions -->
+        <div class="card">
+          <h2>Top App Versions</h2>
+          <div id="versionsList"></div>
+        </div>
+      </div>
+
+      <!-- Live Logs -->
+      <div class="logs">
+        <h2>Live Event Log</h2>
+        <div id="liveLog"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let token = null;
+    let ws = null;
+    let eventsByTypeData = {};
+    let regionData = {};
+    let osData = {};
+    let versionData = {};
+    let liveLogEntries = [];
+    const MAX_LOG_ENTRIES = 50;
+
+    // Chart instances
+    let eventsByTypeChart = null;
+    let regionChart = null;
+
+    async function login() {
+      const username = document.getElementById('usernameInput').value;
+      const password = document.getElementById('passwordInput').value;
+
+      try {
+        const response = await fetch('http://localhost:3000/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (!response.ok) {
+          alert('Login failed');
+          return;
+        }
+
+        const data = await response.json();
+        token = data.token;
+
+        document.getElementById('authStatus').className = 'status connected';
+        document.getElementById('authStatus').textContent = '✅ Authenticated';
+        document.getElementById('dashboard').style.display = 'block';
+
+        connectWebSocket();
+      } catch (err) {
+        console.error('Login error:', err);
+        alert('Login error: ' + err.message);
+      }
+    }
+
+    function connectWebSocket() {
+      // Simple WebSocket connection (in production, use secure auth)
+      ws = new WebSocket('ws://localhost:8080');
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        addLog('WebSocket connected');
+      };
+
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+
+        if (message.type === 'init') {
+          initCharts(message.data);
+        } else if (message.type === 'update') {
+          updateCharts(message.data);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error('WebSocket error:', err);
+        addLog('WebSocket error: ' + err);
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        addLog('WebSocket disconnected');
+      };
+    }
+
+    function initCharts(data) {
+      // Initialize with empty data
+      const ctx1 = document.getElementById('eventsByTypeChart').getContext('2d');
+      eventsByTypeChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{ label: 'Count', data: [], backgroundColor: '#667eea' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      const ctx2 = document.getElementById('regionChart').getContext('2d');
+      regionChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: [],
+          datasets: [{ data: [], backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe'] }]
+        },
+        options: { responsive: true }
+      });
+
+      addLog('Charts initialized');
+    }
+
+    function updateCharts(eventData) {
+      if (!eventData) return;
+
+      // Parse event
+      const event = eventData.data || eventData;
+      const eventType = event.event || 'unknown';
+      const region = event.region_code || 'unknown';
+      const os = event.os || 'unknown';
+      const version = event.app_version || 'unknown';
+
+      // Update counters
+      eventsByTypeData[eventType] = (eventsByTypeData[eventType] || 0) + 1;
+      regionData[region] = (regionData[region] || 0) + 1;
+      osData[os] = (osData[os] || 0) + 1;
+      versionData[version] = (versionData[version] || 0) + 1;
+
+      // Update metrics
+      document.getElementById('totalEvents').textContent = Object.values(eventsByTypeData).reduce((a, b) => a + b, 0);
+      document.getElementById('uniqueRegions').textContent = Object.keys(regionData).length;
+      document.getElementById('countAndroid').textContent = osData['Android'] || 0;
+      document.getElementById('countIOS').textContent = osData['iOS'] || 0;
+      document.getElementById('countWeb').textContent = osData['Web'] || 0;
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+      // Update charts
+      if (eventsByTypeChart) {
+        eventsByTypeChart.data.labels = Object.keys(eventsByTypeData);
+        eventsByTypeChart.data.datasets[0].data = Object.values(eventsByTypeData);
+        eventsByTypeChart.update();
+      }
+
+      if (regionChart) {
+        regionChart.data.labels = Object.keys(regionData);
+        regionChart.data.datasets[0].data = Object.values(regionData);
+        regionChart.update();
+      }
+
+      // Update versions list
+      const versionsList = document.getElementById('versionsList');
+      versionsList.innerHTML = Object.entries(versionData)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([v, c]) => `<div class="metric"><span>${v}</span><span class="metric-value">${c}</span></div>`)
+        .join('');
+
+      addLog(`Event: ${eventType} from ${region} (${os})`);
+    }
+
+    function addLog(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      liveLogEntries.unshift(`[${timestamp}] ${message}`);
+      if (liveLogEntries.length > MAX_LOG_ENTRIES) {
+        liveLogEntries.pop();
+      }
+
+      const logDiv = document.getElementById('liveLog');
+      logDiv.innerHTML = liveLogEntries
+        .map(log => `<div class="log-entry"><span class="log-time">${log.split('] ')[0].slice(1)}</span> ${log.split('] ')[1]}</div>`)
+        .join('');
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      addLog('Dashboard loaded. Please login to continue.');
+    });
+  </script>
+</body>
+</html>
