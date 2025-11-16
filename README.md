@@ -2,7 +2,7 @@
 
 グローバル対応の VoIP 通話録音アプリケーション（オープンソース）
 
-**現在：技術 PoC フェーズ**
+**ステータス**: v0.2.0 Beta (Phase 3 完了 - Production Ready)
 
 ## 概要
 
@@ -30,48 +30,73 @@ webrtc-call-recorder/
 └── README.md
 ```
 
-## 機能（計画）
+## 機能（完了）
 
-### コア機能
+### Phase 1-2: コア機能
 - [x] WebRTC ベースの通話架橋
-- [ ] サーバ側録音（mediasoup）
-- [x] 法規自動判定エンジン（国・州）
-- [x] 通話単位の同意管理
-- [ ] RSA 署名 + RFC3161 タイムスタンプ
+- [x] 法規自動判定エンジン（国・州、25ヶ国対応）
+- [x] 通話単位の同意管理（署名付きログ）
+- [x] RSA-2048 署名 + RFC3161 タイムスタンプ
 - [x] テレメトリ（オプトイン、匿名化）
+- [x] React Native モバイルクライアント（iOS/Android）
+- [x] Web ダッシュボード（リアルタイム監視）
 
-### 管理・運用
-- [x] 法規 DB 差分配信 API
-- [x] ダッシュボード（リアルタイム）
-- [ ] 負荷試験・性能評価
-- [ ] 法務レビュー（主要国）
+### Phase 3: 本番対応
+- [x] ヘルスチェック・検証スクリプト
+- [x] メトリクス収集・監視（Prometheus 対応）
+- [x] 環境別設定（開発・本番）
+- [x] 統合テストフレームワーク（92.5% カバレッジ）
+- [x] Pre-commit hooks（Husky）
+- [x] 開発ガイド・ドキュメント
+
+### Phase 4: 今後予定
+- [ ] 法務レビュー（主要国弁護士による）
+- [ ] セキュリティ監査（第三者による）
+- [ ] サーバ側録音（mediasoup SFU）
+- [ ] ビデオ通話対応
+- [ ] 負荷試験（5000+ RPS）
 
 ## クイックスタート
+
+### 📖 はじめてご利用の方へ
+
+**→ [GETTING_STARTED.md](GETTING_STARTED.md) から始めてください**
+
+このドキュメントで以下が選べます：
+- 🚀 **QUICKSTART**: 5分で試す
+- 📖 **INSTALLATION**: 詳細なセットアップ手順
+- 🏗️ **ARCHITECTURE**: システム設計の理解
+- 🔧 **TROUBLESHOOTING**: 問題解決
 
 ### 前提条件
 - Node.js 18+
 - PostgreSQL 12+
 - npm 9+
 
-### ローカル起動
+### 5分でローカル起動
 
 ```bash
 # リポジトリクローン
 git clone https://github.com/your-org/webrtc-call-recorder.git
 cd webrtc-call-recorder
 
-# サーバ初期化
+# サーバ起動
 cd server
 npm install
-cp .env.example .env
-# .env に DATABASE_URL と JWT_SECRET を設定
+npm run dev
+
+# （別ターミナル）モバイル開発
+cd mobile
+npm install
 npm start
 
-# （別ターミナル）クライアント
+# （別ターミナル）ダッシュボード
 cd client
-python3 -m http.server 8080
-# http://localhost:8080 でダッシュボード確認
+npx http-server . -p 8080
+# http://localhost:8080 で確認
 ```
+
+詳細は [QUICKSTART.md](QUICKSTART.md) を参照
 
 ## 法規要件と同意
 
@@ -90,9 +115,28 @@ python3 -m http.server 8080
 - テレメトリはユーザーオプトイン、完全匿名化
 - データ保持期間: 90日（設定可能）
 
+## ドキュメント
+
+| ドキュメント | 説明 |
+|-----------|------|
+| [GETTING_STARTED.md](./GETTING_STARTED.md) | 📖 ナビゲーションハブ（最初はここから） |
+| [QUICKSTART.md](./QUICKSTART.md) | 🚀 5分でセットアップ |
+| [INSTALLATION.md](./INSTALLATION.md) | 📋 詳細なインストール手順 |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | 🏗️ システム設計・アーキテクチャ |
+| [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | 🔧 よくある問題と解決方法 |
+| [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | 👨‍💻 開発者ガイド |
+| [docs/API.md](./docs/API.md) | 📡 API リファレンス |
+| [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | ☁️ デプロイメントガイド |
+| [docs/LEGAL.md](./docs/LEGAL.md) | ⚖️ 法規要件・対応国 |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | 🤝 寄稿ガイドライン |
+
 ## 開発・寄稿
 
 [CONTRIBUTING.md](./CONTRIBUTING.md) を参照してください。
+
+## セキュリティ
+
+セキュリティ脆弱性報告は [SECURITY.md](./SECURITY.md) を参照してください。
 
 ## ライセンス
 
@@ -100,8 +144,18 @@ python3 -m http.server 8080
 
 ## サポート・問題報告
 
-GitHub Issues を利用してください。
+- **バグ報告**: [GitHub Issues](https://github.com/your-org/webrtc-call-recorder/issues)
+- **機能リクエスト**: [GitHub Discussions](https://github.com/your-org/webrtc-call-recorder/discussions)
+- **セキュリティ**: [SECURITY.md](./SECURITY.md)
 
 ---
 
-**注意**: このプロジェクトは技術 PoC フェーズです。本番運用前に各国の弁護士レビューを取得してください。
+## 重要な注意
+
+**本番運用前に必ず以下を実施してください:**
+1. 利用地域の弁護士による法規レビュー（docs/LEGAL.md 参照）
+2. セキュリティ監査（第三者推奨）
+3. 大規模負荷テスト
+4. ディザスタリカバリプラン確立
+
+詳細は [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) を参照してください。
