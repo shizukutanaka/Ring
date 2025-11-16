@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 0.3.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Verify version format
+        run: |
+          if ! [[ "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "Invalid version format. Use semantic versioning (e.g., 0.3.0)"
+            exit 1
+          fi
+
+      - name: Update version in package.json files
+        run: |
+          cd server
+          npm version --no-git-tag-version ${{ github.event.inputs.version }}
+          cd ../mobile
+          npm version --no-git-tag-version ${{ github.event.inputs.version }}
+          cd ..
+
+      - name: Run tests
+        run: |
+          cd server
+          npm install
+          npm test
+
+      - name: Update CHANGELOG
+        run: |
+          # Prepend new version to CHANGELOG
+          echo "## [${{ github.event.inputs.version }}] - $(date +'%Y-%m-%d')" > /tmp/changelog.new
+          echo "" >> /tmp/changelog.new
+          echo "### Added" >> /tmp/changelog.new
+          echo "- New features for this release" >> /tmp/changelog.new
+          echo "" >> /tmp/changelog.new
+          echo "### Changed" >> /tmp/changelog.new
+          echo "- Changes in this release" >> /tmp/changelog.new
+          echo "" >> /tmp/changelog.new
+          echo "### Fixed" >> /tmp/changelog.new
+          echo "- Bug fixes in this release" >> /tmp/changelog.new
+          echo "" >> /tmp/changelog.new
+          tail -n +3 CHANGELOG.md >> /tmp/changelog.new
+          mv /tmp/changelog.new CHANGELOG.md
+
+      - name: Commit changes
+        run: |
+          git add server/package.json mobile/package.json CHANGELOG.md
+          git commit -m "chore: Release v${{ github.event.inputs.version }}"
+
+      - name: Create Git tag
+        run: |
+          git tag -a v${{ github.event.inputs.version }} -m "Release v${{ github.event.inputs.version }}"
+
+      - name: Push changes and tags
+        run: |
+          git push origin main
+          git push origin --tags
+
+      - name: Create release notes
+        id: release_notes
+        run: |
+          # Generate release notes from CHANGELOG
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          sed -n '/^## \[${{ github.event.inputs.version }}\]/,/^## \[/p' CHANGELOG.md | head -n -1 >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Docker image
+        run: |
+          cd server
+          docker build -t webrtc-call-recorder:${{ github.event.inputs.version }} .
+          docker tag webrtc-call-recorder:${{ github.event.inputs.version }} webrtc-call-recorder:latest
+        continue-on-error: true
+
+      - name: Build mobile artifacts
+        run: |
+          cd mobile
+          npm install
+          # Note: Full iOS/Android builds require Xcode/Android Studio
+          echo "Mobile build steps can be added for CI/CD integration"
+        continue-on-error: true
+
+      - name: Notify release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🎉 Release v${{ github.event.inputs.version }} published!'
+            })
+        continue-on-error: true

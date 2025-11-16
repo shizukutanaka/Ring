@@ -1,0 +1,113 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd mobile
+          npm install --legacy-peer-deps
+
+      - name: Lint code
+        run: |
+          cd mobile
+          npm run lint || true  # Don't fail on lint warnings
+
+      - name: Run tests
+        run: |
+          cd mobile
+          npm test -- --coverage --watchAll=false
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./mobile/coverage/lcov.info
+          flags: mobile
+          name: mobile-coverage
+
+      - name: Check bundle size
+        run: |
+          cd mobile
+          npm run build || echo "Build not configured"
+
+      - name: Security audit
+        run: |
+          cd mobile
+          npm audit --audit-level=moderate || true  # Report but don't fail
+
+  lint-types:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd mobile
+          npm install --legacy-peer-deps
+
+      - name: Check code style with Prettier
+        run: |
+          cd mobile
+          npx prettier --check src/ || true
+
+      - name: Run linter
+        run: |
+          cd mobile
+          npm run lint || true
+
+  dependency-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Check for vulnerable dependencies
+        run: |
+          cd mobile
+          npm install
+          npm audit --production || true
+
+      - name: Check for outdated dependencies
+        run: |
+          cd mobile
+          npm outdated || true

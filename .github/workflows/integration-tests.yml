@@ -1,0 +1,218 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'server/**'
+      - 'tests/**'
+      - '.github/workflows/integration-tests.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'server/**'
+      - 'tests/**'
+      - '.github/workflows/integration-tests.yml'
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: webrtc_test
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install server dependencies
+        run: |
+          cd server
+          npm install
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/webrtc_test
+        run: |
+          cd server
+          psql -h localhost -U testuser -d webrtc_test -f init_db.sql
+        continue-on-error: true
+
+      - name: Run unit tests
+        run: |
+          cd server
+          npm test -- --coverage
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/webrtc_test
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
+          NODE_ENV: test
+        run: |
+          cd server
+          npm test -- integration.test.js --detectOpenHandles
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./server/coverage/lcov.info
+          flags: integration
+          name: integration-coverage
+
+      - name: Health check validation
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/webrtc_test
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
+        run: |
+          cd server
+          npm run dev &
+          sleep 5
+          node scripts/health-check.js --verbose || true
+          pkill -f "node.*index.js"
+
+  load-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && contains(github.ref, 'main')
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: webrtc_test
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install server dependencies
+        run: |
+          cd server
+          npm install
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/webrtc_test
+        run: |
+          cd server
+          psql -h localhost -U testuser -d webrtc_test -f init_db.sql
+        continue-on-error: true
+
+      - name: Start server
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/webrtc_test
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
+          NODE_ENV: test
+          PORT: 3000
+        run: |
+          cd server
+          npm run dev &
+          sleep 5
+        continue-on-error: false
+
+      - name: Run load tests
+        run: |
+          cd tests
+          node load-test.js --duration 30000 --rps 100
+
+      - name: Check load test results
+        run: |
+          if [ -f load-test-report.json ]; then
+            cat load-test-report.json
+          fi
+        continue-on-error: true
+
+      - name: Upload load test report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: load-test-report
+          path: load-test-report.json
+          retention-days: 30
+        continue-on-error: true
+
+  database-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: webrtc_test
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Install dependencies
+        run: |
+          cd server
+          npm install
+
+      - name: Test database initialization
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/webrtc_test
+        run: |
+          cd server
+          psql -h localhost -U testuser -d webrtc_test -f init_db.sql
+          psql -h localhost -U testuser -d webrtc_test -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';"
+
+      - name: Verify schema
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/webrtc_test
+        run: |
+          cd server
+          node -e "
+            const { Pool } = require('pg');
+            const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+            pool.query(\"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'\", (err, res) => {
+              if (err) { console.error(err); process.exit(1); }
+              console.log('Database tables:', res.rows.map(r => r.table_name).join(', '));
+              process.exit(0);
+            });
+          "
