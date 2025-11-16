@@ -1,0 +1,27 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Pre-commit hooks for code quality
+
+echo "🔍 Running pre-commit checks..."
+
+# 1. Check for secrets
+if grep -r "password.*=" --include="*.js" --include="*.json" | grep -v ".env" | grep -v "test"; then
+    echo "❌ Potential secrets detected in code!"
+    exit 1
+fi
+
+# 2. Lint JavaScript files
+echo "📝 Running ESLint..."
+npx eslint --fix server/ mobile/
+
+# 3. Format code with Prettier
+echo "✨ Formatting code..."
+npx prettier --write server/ mobile/ --ignore-unknown
+
+# 4. Run tests on changed files
+echo "🧪 Running tests..."
+npm test -- --onlyChanged
+
+echo "✅ Pre-commit checks passed!"
+exit 0
