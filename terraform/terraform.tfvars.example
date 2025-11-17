@@ -1,0 +1,67 @@
+# WebRTC Call Recorder - Terraform Variables Example
+# Copy this file to terraform.tfvars and customize for your environment
+
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "prod"
+app_name    = "webrtc-recorder"
+
+# VPC Configuration
+vpc_cidr              = "10.0.0.0/16"
+public_subnet_cidrs   = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+private_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+database_subnet_cidrs = ["10.0.201.0/24", "10.0.202.0/24", "10.0.203.0/24"]
+
+# Database Configuration
+postgres_version           = "15.3"
+db_instance_class          = "db.r5.large" # Production-grade
+db_allocated_storage       = 500           # 500 GB
+db_max_allocated_storage   = 1000          # Auto-scale to 1 TB
+db_name                    = "webrtc_recorder"
+db_username                = "postgres"
+backup_retention_period    = 30
+enable_multi_az            = true
+enable_encryption          = true
+enable_enhanced_monitoring = true
+enable_deletion_protection = true
+
+# Application Configuration
+app_instance_type     = "c5.xlarge"     # Production-grade
+app_min_size          = 2
+app_max_size          = 20
+app_desired_capacity  = 4
+app_port              = 3000
+docker_image          = "123456789.dkr.ecr.us-east-1.amazonaws.com/webrtc-recorder:latest"
+key_pair_name         = "your-keypair-name"
+
+# Cache Configuration
+redis_version           = "7.0"
+cache_node_type         = "cache.r6g.xlarge"  # Production-grade
+cache_num_nodes         = 2
+cache_automatic_failover = true
+cache_encryption_at_rest = true
+
+# Load Balancer Configuration
+enable_https            = true
+ssl_certificate_arn     = "arn:aws:acm:us-east-1:123456789:certificate/12345678"
+enable_waf              = true
+
+# Storage Configuration
+s3_enable_versioning = true
+s3_enable_encryption = true
+s3_enable_logging    = true
+
+# Monitoring Configuration
+enable_monitoring        = true
+enable_monitoring_alarms = true
+cloudwatch_log_retention_days = 30
+alarm_email = "ops@example.com"
+
+# Tags
+tags = {
+  Project     = "WebRTC Call Recorder"
+  Environment = "production"
+  Terraform   = "true"
+  Owner       = "DevOps Team"
+  CostCenter  = "Engineering"
+}
