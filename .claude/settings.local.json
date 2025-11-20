@@ -5,7 +5,13 @@
       "Bash(tree:*)",
       "Bash(git init:*)",
       "Bash(git config:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add Phase 3 production readiness features\n\n- Add health check validation script (scripts/health-check.js)\n- Implement monitoring and metrics collection (server/monitoring.js)\n- Create environment-specific configurations (.env.development, .env.production)\n- Add integration testing framework (server/tests/integration.test.js)\n- Implement pre-commit hooks via Husky (.husky/pre-commit)\n- Create comprehensive developer guide (docs/DEVELOPMENT.md)\n\nThis commit completes Phase 3 with production-ready monitoring, health checks,\nautomated testing gates, and comprehensive documentation for developers.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(git show-ref:*)",
+      "Bash(npm test:*)",
+      "Bash(node tests/improvements-phase2.test.js:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
