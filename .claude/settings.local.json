@@ -14,7 +14,8 @@
       "Bash(node:*)",
       "Bash(git remote add:*)",
       "Bash(git push:*)",
-      "Bash(timeout 20 git push origin master)"
+      "Bash(timeout 20 git push origin master)",
+      "Bash(timeout 60 git push origin master)"
     ],
     "deny": [],
     "ask": []
