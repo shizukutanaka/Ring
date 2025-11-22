@@ -17,7 +17,8 @@
       "Bash(timeout 20 git push origin master)",
       "Bash(timeout 60 git push origin master)",
       "Bash(git rev-list:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
