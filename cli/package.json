@@ -1,0 +1,28 @@
+{
+    "name": "webrtc-call-recorder-cli",
+    "version": "1.0.0",
+    "description": "Management CLI for WebRTC Call Recorder",
+    "main": "webrtc-cli.js",
+    "bin": {
+        "webrtc-cli": "./webrtc-cli.js"
+    },
+    "scripts": {
+        "start": "node webrtc-cli.js",
+        "interactive": "node webrtc-cli-interactive.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "webrtc",
+        "cli",
+        "management"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "axios": "^1.6.0",
+        "chalk": "^4.1.2",
+        "cli-table3": "^0.6.3",
+        "inquirer": "^8.2.6",
+        "yargs": "^17.7.2"
+    }
+}

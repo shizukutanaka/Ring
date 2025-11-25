@@ -210,6 +210,64 @@ webrtc-cli db seed
 # Created 100 records
 ```
 
+### Codec Management
+
+#### List Codec Usage
+```bash
+webrtc-cli codec list
+
+# Output:
+# ┌───────────────┬────────────────────┬────────────────┬─────────────┐
+# │ Codec         │ Total Selections   │ Percentage     │ Avg Quality │
+# ├───────────────┼────────────────────┼────────────────┼─────────────┤
+# │ AV1           │ 150                │ 45.00%         │ 8.50        │
+# │ VP9           │ 100                │ 30.00%         │ 7.80        │
+# │ H264          │ 83                 │ 25.00%         │ 7.20        │
+# └───────────────┴────────────────────┴────────────────┴─────────────┘
+```
+
+#### Codec Quality Metrics
+```bash
+webrtc-cli codec quality
+```
+
+#### Codec Adaptations
+```bash
+webrtc-cli codec adaptations --limit 20
+```
+
+### Consent Management
+
+#### List Consent Requests
+```bash
+webrtc-cli consent list --status pending
+webrtc-cli consent list --jurisdiction GDPR
+```
+
+#### Consent Statistics
+```bash
+webrtc-cli consent stats
+```
+
+#### Verify Signature
+```bash
+webrtc-cli consent verify --id <request-id>
+```
+
+#### Export User Data (GDPR)
+```bash
+webrtc-cli consent export --userId <user-id> --file export.json
+```
+
+### Interactive Mode
+
+Start the menu-driven interface:
+```bash
+node cli/webrtc-cli-interactive.js
+# or if installed globally:
+webrtc-cli interactive
+```
+
 ## Configuration
 
 ### Environment Variables

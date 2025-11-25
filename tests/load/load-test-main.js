@@ -51,14 +51,14 @@ function randomCallId() {
   return 'call-' + Math.random().toString(36).substr(2, 9);
 }
 
-export default function() {
+export default function () {
   const userPair = {
     initiator: randomUserId(),
     recipient: randomUserId()
   };
 
   // Authenticate
-  group('Authentication', function() {
+  group('Authentication', function () {
     const loginResponse = http.post(
       `${BASE_URL}/api/auth/login`,
       JSON.stringify({
@@ -81,7 +81,7 @@ export default function() {
   });
 
   // Test: Initiate Call
-  group('Initiate Call', function() {
+  group('Initiate Call', function () {
     const startTime = new Date();
 
     const initiateResponse = http.post(
@@ -116,7 +116,7 @@ export default function() {
 
   // Test: Record Consent
   if (userPair.callId) {
-    group('Record Consent', function() {
+    group('Record Consent', function () {
       const consentResponse = http.post(
         `${BASE_URL}/api/consent/record`,
         JSON.stringify({
@@ -146,7 +146,7 @@ export default function() {
   }
 
   // Test: Get Call Details
-  group('Get Call Details', function() {
+  group('Get Call Details', function () {
     const getResponse = http.get(
       `${BASE_URL}/api/calls/${userPair.callId}`,
       {
@@ -166,7 +166,7 @@ export default function() {
 
   // Test: End Call
   if (userPair.callId) {
-    group('End Call', function() {
+    group('End Call', function () {
       const endResponse = http.post(
         `${BASE_URL}/api/calls/${userPair.callId}/end`,
         JSON.stringify({}),

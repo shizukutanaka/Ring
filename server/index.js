@@ -85,6 +85,13 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Initialize AuthService
+const AuthService = require('./services/AuthService');
+const authService = new AuthService(pool, JWT_SECRET);
+
+// Ensure AuthService is initialized
+authService.initialize().catch(console.error);
+
 // Registration Endpoint
 app.post('/api/register', async (req, res) => {
   try {
@@ -98,41 +105,14 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'password must be at least 12 characters' });
     }
 
-    // Check if user exists
-    const existingUser = await pool.query(
-      'SELECT id FROM users WHERE username = $1 OR email = $2',
-      [username, email || null]
-    );
-
-    if (existingUser.rows.length > 0) {
-      return res.status(409).json({ error: 'user already exists' });
-    }
-
-    // Hash password with bcrypt
-    const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
-
-    // Create user
-    const result = await pool.query(
-      'INSERT INTO users(username, email, password_hash, role, created_at) VALUES($1, $2, $3, $4, NOW()) RETURNING id, username, email, role',
-      [username, email || null, password_hash, 'user']
-    );
-
-    const user = result.rows[0];
-
-    // Issue JWT
-    const token = jwt.sign(
-      { sub: user.id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
-    );
-
-    res.status(201).json({
-      token,
-      user: { id: user.id, username: user.username, email: user.email, role: user.role }
-    });
+    const result = await authService.register(username, password, email);
+    res.status(201).json(result);
   } catch (err) {
     console.error('Registration error:', err);
-    res.status(500).json({ error: 'internal server error' });
+    if (err.message.includes('already exists')) {
+      return res.status(409).json({ error: 'User already exists' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -154,45 +134,60 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // Query user from DB
-    const result = await pool.query(
-      'SELECT id, username, email, password_hash, role FROM users WHERE username = $1',
-      [username]
-    );
-
-    if (result.rows.length === 0) {
+    try {
+      const result = await authService.login(username, password);
+      recordLoginAttempt(username, true);
+      res.json(result);
+    } catch (authError) {
       recordLoginAttempt(username, false);
-      return res.status(401).json({ error: 'invalid_credentials' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-
-    const user = result.rows[0];
-
-    // Verify password using bcrypt (secure comparison)
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
-    if (!isValidPassword) {
-      recordLoginAttempt(username, false);
-      return res.status(401).json({ error: 'invalid_credentials' });
-    }
-
-    // Clear login attempts on successful auth
-    recordLoginAttempt(username, true);
-
-    // Issue JWT
-    const token = jwt.sign(
-      { sub: user.id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
-    );
-
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ error: 'internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Telemetry Collection Endpoint
-app.post('/api/collect', async (req, res) => {
+// Refresh Token Endpoint
+app.post('/api/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Refresh token required' });
+    }
+
+    const result = await authService.refreshToken(refreshToken);
+    res.json(result);
+  } catch (err) {
+    console.error('Refresh error:', err);
+    res.status(401).json({ error: 'Invalid or expired refresh token' });
+  }
+});
+
+// RBAC Middleware
+const { checkPermission } = require('./middleware/rbac');
+const { PERMISSIONS } = require('./config/permissions');
+
+// JWT Authentication Middleware (Extracting from existing logic if needed, or assuming it's applied globally or per route)
+// For this demo, we'll assume a middleware populates req.user from the token.
+// Let's create a simple authenticateToken middleware inline or import it if it existed.
+// Since index.js didn't have a global auth middleware, I'll add one here.
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.sendStatus(401);
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
+// Telemetry Collection Endpoint (Protected)
+app.post('/api/collect', authenticateToken, checkPermission(PERMISSIONS.SYSTEM_STATS), async (req, res) => {
   try {
     const events = req.body;
 
@@ -282,12 +277,42 @@ app.get('/api/legaldb/lookup', (req, res) => {
   }
 });
 
-// Start Express Server
-app.listen(PORT, () => {
-  console.log(`Express server listening on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`API: http://localhost:${PORT}/api/*`);
-});
+// ============= HTTPS / mTLS SETUP =============
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
+const IS_MTLS_ENABLED = process.env.MTLS_ENABLED === 'true';
+
+if (IS_MTLS_ENABLED) {
+  try {
+    const options = {
+      key: fs.readFileSync(path.join(__dirname, 'certs', 'server-key.pem')),
+      cert: fs.readFileSync(path.join(__dirname, 'certs', 'server-cert.pem')),
+      ca: fs.readFileSync(path.join(__dirname, 'certs', 'ca-cert.pem')),
+      requestCert: true,
+      rejectUnauthorized: true // Enforce mTLS
+    };
+
+    https.createServer(options, app).listen(PORT, () => {
+      console.log(`HTTPS/mTLS server listening on port ${PORT}`);
+      console.log(`Health check: https://localhost:${PORT}/health`);
+    });
+  } catch (error) {
+    console.error('Failed to start mTLS server:', error.message);
+    console.log('Falling back to HTTP...');
+    app.listen(PORT, () => {
+      console.log(`HTTP server listening on port ${PORT}`);
+    });
+  }
+} else {
+  app.listen(PORT, () => {
+    console.log(`HTTP server listening on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+    console.log(`API: http://localhost:${PORT}/api/*`);
+  });
+}
+
 
 // ============= WEBSOCKET HANDLERS =============
 

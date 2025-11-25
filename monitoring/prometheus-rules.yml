@@ -1,0 +1,108 @@
+groups:
+  - name: codec_alerts
+    interval: 30s
+    rules:
+      - alert: HighCodecNegotiationFailureRate
+        expr: |
+          (sum(rate(codec_negotiation_failed_total[5m])) / sum(rate(codec_negotiation_total[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: codec
+        annotations:
+          summary: "High codec negotiation failure rate"
+          description: "Codec negotiation failure rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: LowQualityScore
+        expr: |
+          avg(codec_quality_score) < 5
+        for: 10m
+        labels:
+          severity: warning
+          component: codec
+        annotations:
+          summary: "Low average quality score"
+          description: "Average codec quality score is {{ $value }} (threshold: 5)"
+
+      - alert: FrequentCodecAdaptations
+        expr: |
+          rate(codec_adaptation_total[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: info
+          component: codec
+        annotations:
+          summary: "Frequent codec adaptations detected"
+          description: "Codec adaptation rate is {{ $value }} per second (threshold: 0.5/s)"
+
+  - name: consent_alerts
+    interval: 30s
+    rules:
+      - alert: ConsentSignatureVerificationFailure
+        expr: |
+          (sum(rate(consent_signature_failed_total[5m])) / sum(rate(consent_signature_checks_total[5m]))) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          component: consent
+        annotations:
+          summary: "High consent signature verification failure rate"
+          description: "Signature verification failure rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+
+      - alert: LowConsentRate
+        expr: |
+          (sum(rate(consent_granted_total[1h])) / sum(rate(consent_requests_total[1h]))) < 0.5
+        for: 1h
+        labels:
+          severity: warning
+          component: consent
+        annotations:
+          summary: "Low consent acceptance rate"
+          description: "Consent rate is {{ $value | humanizePercentage }} (threshold: 50%)"
+
+      - alert: HighRTBFRequestRate
+        expr: |
+          rate(consent_rtbf_requests_total[1h]) > 10
+        for: 1h
+        labels:
+          severity: info
+          component: consent
+        annotations:
+          summary: "High rate of Right to Be Forgotten requests"
+          description: "RTBF request rate is {{ $value }} per hour (threshold: 10/h)"
+
+      - alert: ComplianceViolation
+        expr: |
+          consent_compliance_status == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: compliance
+        annotations:
+          summary: "Compliance violation detected in {{ $labels.jurisdiction }}"
+          description: "Compliance status is non-compliant for {{ $labels.jurisdiction }}"
+
+  - name: performance_alerts
+    interval: 15s
+    rules:
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_ms_bucket[5m])) > 200
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API response time"
+          description: "P95 response time is {{ $value }}ms (threshold: 200ms)"
+
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(http_request_failed[5m])) / sum(rate(http_requests_total[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High API error rate"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"

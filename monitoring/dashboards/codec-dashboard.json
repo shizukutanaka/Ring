@@ -1,0 +1,252 @@
+{
+    "dashboard": {
+        "id": null,
+        "uid": "codec-metrics",
+        "title": "Codec Negotiation & Quality",
+        "tags": [
+            "webrtc",
+            "codecs",
+            "tier1"
+        ],
+        "timezone": "browser",
+        "schemaVersion": 27,
+        "version": 0,
+        "refresh": "10s",
+        "panels": [
+            {
+                "id": 1,
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 0
+                },
+                "type": "piechart",
+                "title": "Codec Selection Distribution",
+                "targets": [
+                    {
+                        "expr": "sum by (codec) (codec_selected_total)",
+                        "legendFormat": "{{codec}}",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "legend": {
+                        "displayMode": "table",
+                        "placement": "right"
+                    },
+                    "pieType": "pie",
+                    "displayLabels": [
+                        "percent"
+                    ]
+                }
+            },
+            {
+                "id": 2,
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 0
+                },
+                "type": "stat",
+                "title": "Negotiation Success Rate",
+                "targets": [
+                    {
+                        "expr": "sum(codec_negotiation_success_total) / sum(codec_negotiation_total) * 100",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "graphMode": "area",
+                    "colorMode": "value",
+                    "orientation": "auto",
+                    "textMode": "value_and_name",
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    }
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "red"
+                                },
+                                {
+                                    "value": 90,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 95,
+                                    "color": "green"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 3,
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 8
+                },
+                "type": "timeseries",
+                "title": "Quality Scores by Codec",
+                "targets": [
+                    {
+                        "expr": "avg by (codec) (codec_quality_score)",
+                        "legendFormat": "{{codec}}",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth",
+                            "fillOpacity": 10
+                        },
+                        "unit": "short",
+                        "min": 0,
+                        "max": 10,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "red"
+                                },
+                                {
+                                    "value": 5,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 7,
+                                    "color": "green"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 4,
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 16
+                },
+                "type": "timeseries",
+                "title": "Codec Adaptation Events",
+                "targets": [
+                    {
+                        "expr": "rate(codec_adaptation_total[5m])",
+                        "legendFormat": "{{from_codec}} → {{to_codec}}",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "custom": {
+                            "drawStyle": "bars",
+                            "fillOpacity": 80
+                        },
+                        "unit": "ops"
+                    }
+                }
+            },
+            {
+                "id": 5,
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 16
+                },
+                "type": "stat",
+                "title": "Bandwidth Savings (vs H264)",
+                "targets": [
+                    {
+                        "expr": "(1 - (sum(codec_bandwidth_bytes{codec!=\"H264\"}) / sum(codec_bandwidth_bytes{codec=\"H264\"}))) * 100",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "graphMode": "area",
+                    "colorMode": "value",
+                    "textMode": "value_and_name"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": 0,
+                                    "color": "red"
+                                },
+                                {
+                                    "value": 20,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 40,
+                                    "color": "green"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 6,
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 24
+                },
+                "type": "timeseries",
+                "title": "Negotiation Latency (p95)",
+                "targets": [
+                    {
+                        "expr": "histogram_quantile(0.95, rate(codec_negotiation_duration_ms_bucket[5m]))",
+                        "legendFormat": "p95",
+                        "refId": "A"
+                    },
+                    {
+                        "expr": "histogram_quantile(0.50, rate(codec_negotiation_duration_ms_bucket[5m]))",
+                        "legendFormat": "p50",
+                        "refId": "B"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "ms",
+                        "custom": {
+                            "drawStyle": "line",
+                            "lineInterpolation": "smooth"
+                        }
+                    }
+                }
+            }
+        ],
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        }
+    },
+    "overwrite": true
+}

@@ -4,126 +4,31 @@
  * Integrates with WebRTC Call Recorder API
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 
 // Screens
-import LoginScreen from './screens/LoginScreen';
-import HomeScreen from './screens/HomeScreen';
-import CallScreen from './screens/CallScreen';
-import ConsentScreen from './screens/ConsentScreen';
-import SettingsScreen from './screens/SettingsScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import CallsScreen from './src/screens/CallsScreen';
+import CallInProgressScreen from './src/screens/CallInProgressScreen';
+import ConsentScreen from './src/screens/ConsentScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 // Context
-import { AuthContext } from './context/AuthContext';
-import { CallContext } from './context/CallContext';
-
-// Services
-import AuthService from './services/AuthService';
-import CallService from './services/CallService';
+import { AuthProvider, AuthContext } from './context/AuthContext';
+import { CallProvider } from './context/CallContext';
 
 const Stack = createNativeStackNavigator();
 
 /**
  * Main App Component
  */
-export default function App() {
-  const [state, dispatch] = React.useReducer(
-    (prevState, action) => {
-      switch (action.type) {
-        case 'RESTORE_TOKEN':
-          return {
-            ...prevState,
-            userToken: action.token,
-            isLoading: false,
-          };
-        case 'SIGN_IN':
-          return {
-            ...prevState,
-            isSignout: false,
-            userToken: action.token,
-          };
-        case 'SIGN_OUT':
-          return {
-            ...prevState,
-            isSignout: true,
-            userToken: null,
-          };
-      }
-    },
-    {
-      isLoading: true,
-      isSignout: false,
-      userToken: null,
-    }
-  );
+const AppContent = () => {
+  const { userToken, isLoading } = React.useContext(AuthContext);
 
-  useEffect(() => {
-    // Fetch the token from storage then navigate to appropriate place
-    const bootstrapAsync = async () => {
-      let userToken;
-
-      try {
-        userToken = await AuthService.getStoredToken();
-      } catch (e) {
-        // Restoring token failed
-        console.error('Failed to restore session', e);
-      }
-
-      dispatch({ type: 'RESTORE_TOKEN', token: userToken });
-    };
-
-    bootstrapAsync();
-  }, []);
-
-  const authContext = React.useMemo(
-    () => ({
-      signIn: async (email: string, password: string) => {
-        try {
-          const response = await AuthService.login(email, password);
-          await AuthService.storeToken(response.token);
-          dispatch({ type: 'SIGN_IN', token: response.token });
-          return { success: true };
-        } catch (error) {
-          return { success: false, error: error.message };
-        }
-      },
-      signUp: async (email: string, password: string, name: string) => {
-        try {
-          const response = await AuthService.register(email, password, name);
-          await AuthService.storeToken(response.token);
-          dispatch({ type: 'SIGN_IN', token: response.token });
-          return { success: true };
-        } catch (error) {
-          return { success: false, error: error.message };
-        }
-      },
-      signOut: async () => {
-        try {
-          await AuthService.logout();
-          await AuthService.clearToken();
-          dispatch({ type: 'SIGN_OUT' });
-        } catch (error) {
-          console.error('Logout error:', error);
-        }
-      },
-      signUp: async (email: string, password: string, name: string) => {
-        try {
-          const response = await AuthService.register(email, password, name);
-          await AuthService.storeToken(response.token);
-          dispatch({ type: 'SIGN_IN', token: response.token });
-          return { success: true };
-        } catch (error) {
-          return { success: false, error: error.message };
-        }
-      },
-    }),
-    []
-  );
-
-  if (state.isLoading) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />
@@ -132,52 +37,59 @@ export default function App() {
   }
 
   return (
-    <AuthContext.Provider value={authContext}>
-      <CallContext.Provider value={{}}>
-        <NavigationContainer>
-          <Stack.Navigator
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: true,
+        }}
+      >
+        {userToken == null ? (
+          // Auth Stack
+          <Stack.Group
             screenOptions={{
-              headerShown: true,
+              headerShown: false,
+              animationEnabled: false,
             }}
           >
-            {state.userToken == null ? (
-              // Auth Stack
-              <Stack.Group
-                screenOptions={{
-                  headerShown: false,
-                  animationEnabled: false,
-                }}
-              >
-                <Stack.Screen name="SignIn" component={LoginScreen} />
-              </Stack.Group>
-            ) : (
-              // App Stack
-              <Stack.Group>
-                <Stack.Screen
-                  name="Home"
-                  component={HomeScreen}
-                  options={{ title: 'WebRTC Recorder' }}
-                />
-                <Stack.Screen
-                  name="Call"
-                  component={CallScreen}
-                  options={{ title: 'Active Call' }}
-                />
-                <Stack.Screen
-                  name="Consent"
-                  component={ConsentScreen}
-                  options={{ title: 'Consent Confirmation' }}
-                />
-                <Stack.Screen
-                  name="Settings"
-                  component={SettingsScreen}
-                  options={{ title: 'Settings' }}
-                />
-              </Stack.Group>
-            )}
-          </Stack.Navigator>
-        </NavigationContainer>
-      </CallContext.Provider>
-    </AuthContext.Provider>
+            <Stack.Screen name="SignIn" component={LoginScreen} />
+          </Stack.Group>
+        ) : (
+          // App Stack
+          <Stack.Group>
+            <Stack.Screen
+              name="Home"
+              component={CallsScreen}
+              options={{ title: 'Recent Calls' }}
+            />
+            <Stack.Screen
+              name="Call"
+              component={CallInProgressScreen}
+              options={{ title: 'Active Call' }}
+            />
+            <Stack.Screen
+              name="Consent"
+              component={ConsentScreen}
+              options={{ title: 'Consent Confirmation' }}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{ title: 'Settings' }}
+            />
+          </Stack.Group>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <CallProvider>
+        <AppContent />
+      </CallProvider>
+    </AuthProvider>
   );
 }
+

@@ -14,7 +14,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./server/init_db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U webrtc_user -d webrtc_recorder"]
+      test: [ "CMD-SHELL", "pg_isready -U webrtc_user -d webrtc_recorder" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,6 +30,7 @@ services:
       WS_PORT: 8080
       DATABASE_URL: postgresql://webrtc_user:secure_password@postgres:5432/webrtc_recorder
       JWT_SECRET: dev-secret-key-change-in-production-12345678
+      MTLS_ENABLED: "true"
     ports:
       - "3000:3000"
       - "8080:8080"
@@ -39,6 +40,7 @@ services:
     volumes:
       - ./server:/app
       - /app/node_modules
+      - ./certs:/app/certs
     restart: unless-stopped
 
   web:
@@ -52,6 +54,19 @@ services:
     depends_on:
       - server
     restart: unless-stopped
+
+  load-tester:
+    image: grafana/k6:latest
+    container_name: webrtc_recorder_load_tester
+    volumes:
+      - ./tests/load:/scripts
+    environment:
+      - BASE_URL=http://server:3000
+    networks:
+      - default
+    depends_on:
+      - server
+    command: run /scripts/load-test-main.js
 
 volumes:
   postgres_data:

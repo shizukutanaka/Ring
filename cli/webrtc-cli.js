@@ -309,6 +309,219 @@ const dbCommands = {
   }
 };
 
+// Codec Management Commands
+const codecCommands = {
+  'list': async () => {
+    try {
+      const response = await api.get('/api/codecs/stats');
+      const stats = response.data;
+
+      console.log(chalk.cyan('\n=== Codec Usage Statistics ===\n'));
+
+      const table = new Table({
+        head: ['Codec', 'Total Selections', 'Percentage', 'Avg Quality'],
+        colWidths: [15, 20, 15, 15]
+      });
+
+      stats.codecs.forEach(codec => {
+        table.push([
+          codec.name,
+          codec.count,
+          `${codec.percentage.toFixed(2)}%`,
+          codec.avg_quality.toFixed(2)
+        ]);
+      });
+
+      console.log(table.toString());
+    } catch (error) {
+      console.error(chalk.red('Error fetching codec stats:', error.message));
+      process.exit(1);
+    }
+  },
+
+  'quality': async () => {
+    try {
+      const response = await api.get('/api/codecs/quality');
+      const quality = response.data;
+
+      console.log(chalk.cyan('\n=== Codec Quality Metrics ===\n'));
+
+      quality.forEach(codec => {
+        console.log(chalk.bold(`${codec.name}:`));
+        console.log(`  Current Quality: ${codec.current_quality}/10`);
+        console.log(`  Average Quality: ${codec.avg_quality.toFixed(2)}/10`);
+        console.log(`  Min Quality: ${codec.min_quality}/10`);
+        console.log(`  Max Quality: ${codec.max_quality}/10`);
+        console.log(`  Trend: ${codec.trend}`);
+        console.log();
+      });
+    } catch (error) {
+      console.error(chalk.red('Error fetching quality metrics:', error.message));
+      process.exit(1);
+    }
+  },
+
+  'adaptations': async (argv) => {
+    try {
+      const params = { limit: argv.limit || 50 };
+      const response = await api.get('/api/codecs/adaptations', { params });
+      const adaptations = response.data;
+
+      if (adaptations.length === 0) {
+        console.log(chalk.yellow('No codec adaptations found'));
+        return;
+      }
+
+      const table = new Table({
+        head: ['Timestamp', 'Call ID', 'From', 'To', 'Reason'],
+        colWidths: [20, 15, 10, 10, 30]
+      });
+
+      adaptations.forEach(adapt => {
+        table.push([
+          new Date(adapt.timestamp).toLocaleString(),
+          adapt.call_id.substring(0, 8) + '...',
+          adapt.from_codec,
+          adapt.to_codec,
+          adapt.reason
+        ]);
+      });
+
+      console.log(table.toString());
+    } catch (error) {
+      console.error(chalk.red('Error fetching adaptations:', error.message));
+      process.exit(1);
+    }
+  }
+};
+
+// Consent Management Commands
+const consentCommands = {
+  'list': async (argv) => {
+    try {
+      const params = {
+        limit: argv.limit || 50,
+        offset: argv.offset || 0
+      };
+
+      if (argv.jurisdiction) params.jurisdiction = argv.jurisdiction;
+      if (argv.status) params.status = argv.status;
+
+      const response = await api.get('/api/consent/requests', { params });
+      const requests = response.data;
+
+      if (requests.length === 0) {
+        console.log(chalk.yellow('No consent requests found'));
+        return;
+      }
+
+      const table = new Table({
+        head: ['ID', 'Call ID', 'Jurisdiction', 'Status', 'Created'],
+        colWidths: [15, 15, 15, 12, 20]
+      });
+
+      requests.forEach(req => {
+        table.push([
+          req.id.substring(0, 8) + '...',
+          req.call_id.substring(0, 8) + '...',
+          req.jurisdiction,
+          req.status,
+          new Date(req.created_at).toLocaleString()
+        ]);
+      });
+
+      console.log(table.toString());
+    } catch (error) {
+      console.error(chalk.red('Error fetching consent requests:', error.message));
+      process.exit(1);
+    }
+  },
+
+  'stats': async () => {
+    try {
+      const response = await api.get('/api/consent/stats');
+      const stats = response.data;
+
+      console.log(chalk.cyan('\n=== Consent Statistics ===\n'));
+
+      console.log(`Total Requests: ${stats.total_requests}`);
+      console.log(`Granted: ${stats.granted} (${stats.grant_rate.toFixed(2)}%)`);
+      console.log(`Rejected: ${stats.rejected}`);
+      console.log(`Pending: ${stats.pending}`);
+      console.log();
+
+      console.log(chalk.bold('By Jurisdiction:'));
+      const table = new Table({
+        head: ['Jurisdiction', 'Requests', 'Grant Rate', 'Compliance'],
+        colWidths: [15, 12, 12, 12]
+      });
+
+      stats.by_jurisdiction.forEach(j => {
+        table.push([
+          j.jurisdiction,
+          j.count,
+          `${j.grant_rate.toFixed(2)}%`,
+          j.compliant ? chalk.green('✓') : chalk.red('✗')
+        ]);
+      });
+
+      console.log(table.toString());
+    } catch (error) {
+      console.error(chalk.red('Error fetching consent stats:', error.message));
+      process.exit(1);
+    }
+  },
+
+  'verify': async (argv) => {
+    if (!argv.id) {
+      console.error(chalk.red('Consent request ID is required'));
+      process.exit(1);
+    }
+
+    try {
+      const response = await api.post(`/api/consent/verify/${argv.id}`);
+      const result = response.data;
+
+      console.log(chalk.cyan('\n=== Signature Verification ===\n'));
+      console.log(`Request ID: ${result.request_id}`);
+      console.log(`Signature Valid: ${result.valid ? chalk.green('✓ Yes') : chalk.red('✗ No')}`);
+      console.log(`Signed At: ${new Date(result.signed_at).toLocaleString()}`);
+      console.log(`Signer: ${result.signer}`);
+      console.log(`Algorithm: ${result.algorithm}`);
+
+      if (!result.valid) {
+        console.log(chalk.red(`\nReason: ${result.reason}`));
+      }
+    } catch (error) {
+      console.error(chalk.red('Error verifying signature:', error.message));
+      process.exit(1);
+    }
+  },
+
+  'export': async (argv) => {
+    if (!argv.userId) {
+      console.error(chalk.red('User ID is required for data export'));
+      process.exit(1);
+    }
+
+    try {
+      console.log(chalk.cyan('Generating data export...'));
+
+      const response = await api.post('/api/consent/export', {
+        user_id: argv.userId
+      });
+
+      const filename = argv.file || `consent-export-${argv.userId}-${Date.now()}.json`;
+      fs.writeFileSync(filename, JSON.stringify(response.data, null, 2));
+
+      console.log(chalk.green(`✓ Data exported successfully: ${filename}`));
+    } catch (error) {
+      console.error(chalk.red('Error exporting data:', error.message));
+      process.exit(1);
+    }
+  }
+};
+
 // Main CLI
 const cli = yargs
   .command('user <subcommand>', 'Manage users', (yargs) => {
