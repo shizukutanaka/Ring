@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ring — 迷惑電話ブロック / Spam Call Blocker</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --text:#e2e8f0; --muted:#94a3b8;
+    --accent:#38bdf8; --danger:#f87171; --warn:#fbbf24; --ok:#34d399; --line:#334155;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif;background:var(--bg);color:var(--text)}
+  header{display:flex;align-items:center;gap:.75rem;padding:1rem 1.25rem;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header h1{font-size:1.25rem;margin:0}
+  header .spacer{flex:1}
+  .langbtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:.5rem;padding:.4rem .8rem;cursor:pointer}
+  main{max-width:880px;margin:0 auto;padding:1rem 1.25rem 3rem}
+  .privacy{background:#052e22;border:1px solid #065f46;color:#a7f3d0;border-radius:.75rem;padding:.8rem 1rem;font-size:.9rem;margin:1rem 0}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:.75rem;padding:1rem 1.25rem;margin:1rem 0}
+  section h2{font-size:1.05rem;margin:.2rem 0 .8rem}
+  .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+  input[type=text],select,textarea{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:.5rem;padding:.55rem .7rem;font-size:1rem}
+  input[type=text]{flex:1;min-width:200px}
+  button{background:var(--accent);color:#082f49;border:none;border-radius:.5rem;padding:.55rem 1rem;font-size:.95rem;cursor:pointer;font-weight:600}
+  button.sub{background:var(--panel2);color:var(--text);border:1px solid var(--line);font-weight:400}
+  button.danger{background:transparent;color:var(--danger);border:1px solid var(--danger);font-weight:400;padding:.3rem .6rem;font-size:.85rem}
+  .chip{display:inline-block;border-radius:999px;padding:.15rem .7rem;font-size:.85rem;font-weight:700}
+  .chip.block{background:#7f1d1d;color:#fecaca}
+  .chip.warn{background:#78350f;color:#fde68a}
+  .chip.allow{background:#064e3b;color:#a7f3d0}
+  .chip.none{background:var(--panel2);color:var(--muted)}
+  .chip.invalid{background:var(--panel2);color:var(--danger)}
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  th,td{border-bottom:1px solid var(--line);padding:.45rem .4rem;text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:600}
+  .muted{color:var(--muted);font-size:.88rem}
+  .badge{background:#7c2d12;color:#fed7aa;border-radius:.35rem;padding:.05rem .45rem;font-size:.75rem;font-weight:700}
+  .result{margin-top:.8rem;padding:.8rem;border:1px solid var(--line);border-radius:.6rem;background:var(--panel2)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:.25rem .9rem;font-size:.95rem;margin:.5rem 0}
+  .kv dt{color:var(--muted)} .kv dd{margin:0}
+  ul.plain{list-style:none;padding:0;margin:0}
+  ul.plain li{display:flex;gap:.5rem;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--line)}
+  ul.plain li .grow{flex:1}
+  textarea{width:100%;min-height:110px;font-family:ui-monospace,monospace;font-size:.85rem}
+  .hidden{display:none}
+  footer{color:var(--muted);font-size:.85rem;text-align:center;padding:1rem}
+  @media (max-width:560px){ .kv{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header>
+  <h1>📵 Ring <span data-i18n="appTitle">迷惑電話ブロック</span></h1>
+  <div class="spacer"></div>
+  <button class="langbtn" id="langToggle" type="button">EN</button>
+</header>
+<main>
+  <div class="privacy" data-i18n="privacyBanner">プライバシー: このアプリは通話履歴や連絡先にアクセスしません。データはすべてこの端末のブラウザ内（localStorage）に保存され、外部へ送信されることはありません。</div>
+
+  <section>
+    <h2 data-i18n="lookupTitle">電話番号を調べる</h2>
+    <div class="row">
+      <input type="text" id="lookupInput" data-i18n-ph="lookupPlaceholder" placeholder="電話番号を入力（例: 050-1234-5678 / +81 90-1234-5678）" inputmode="tel" autocomplete="off">
+      <button id="lookupBtn" type="button" data-i18n="lookupBtn">調べる</button>
+    </div>
+    <div id="lookupResult" class="result hidden"></div>
+    <div id="lookupActions" class="row hidden" style="margin-top:.7rem">
+      <button id="actBlock" type="button" data-i18n="actBlock">ブロックに追加</button>
+      <button id="actAllow" type="button" class="sub" data-i18n="actAllow">許可リストに追加</button>
+      <select id="reportCategory" aria-label="category"></select>
+      <button id="actReport" type="button" class="sub" data-i18n="actReport">通報する</button>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-i18n="blocklistTitle">ブロックリスト</h2>
+    <h3 class="muted" data-i18n="exactTitle">番号指定（完全一致）</h3>
+    <div class="row">
+      <input type="text" id="exactInput" data-i18n-ph="numberPlaceholder" placeholder="電話番号" inputmode="tel" autocomplete="off">
+      <button id="exactAdd" type="button" data-i18n="addBtn">追加</button>
+    </div>
+    <ul class="plain" id="exactList"></ul>
+    <h3 class="muted" data-i18n="prefixTitle">前方一致ルール（例: 0800 / 0501234 / +8190）</h3>
+    <div class="row">
+      <input type="text" id="prefixInput" placeholder="0800" inputmode="tel" autocomplete="off">
+      <button id="prefixAdd" type="button" data-i18n="addBtn">追加</button>
+    </div>
+    <ul class="plain" id="prefixList"></ul>
+    <h3 class="muted" data-i18n="allowTitle">許可リスト（ブロックより優先）</h3>
+    <div class="row">
+      <input type="text" id="allowInput" data-i18n-ph="numberPlaceholder" placeholder="電話番号" inputmode="tel" autocomplete="off">
+      <button id="allowAdd" type="button" data-i18n="addBtn">追加</button>
+    </div>
+    <ul class="plain" id="allowList"></ul>
+  </section>
+
+  <section>
+    <h2 data-i18n="reportsTitle">自分の通報履歴</h2>
+    <ul class="plain" id="reportList"></ul>
+    <p class="muted" id="reportEmpty" data-i18n="reportsEmpty">まだ通報はありません。通報はこの端末内にだけ保存されます。</p>
+  </section>
+
+  <section>
+    <h2 data-i18n="sampleTitle">サンプル迷惑番号データ</h2>
+    <p class="muted" data-i18n="sampleNote">以下はすべてテスト用のダミーデータです。実在の加入者の番号ではありません。</p>
+    <table>
+      <thead><tr>
+        <th data-i18n="colNumber">番号</th><th data-i18n="colCategory">種別</th><th data-i18n="colReports">通報数</th><th data-i18n="colLast">最終通報</th>
+      </tr></thead>
+      <tbody id="sampleBody"></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2 data-i18n="dataTitle">データの書き出し / 読み込み</h2>
+    <p class="muted" data-i18n="dataNote">ブロックリストを JSON（スキーマ v1）で書き出せます。将来の Android 版（CallScreeningService）が同じ形式・同じ判定順序を使います。</p>
+    <div class="row">
+      <button id="exportBtn" type="button" class="sub" data-i18n="exportBtn">JSON を書き出す</button>
+      <button id="importBtn" type="button" class="sub" data-i18n="importBtn">JSON を読み込む</button>
+    </div>
+    <textarea id="dataArea" spellcheck="false"></textarea>
+    <p class="muted" id="statsLine"></p>
+  </section>
+</main>
+<footer>Ring Spam Blocker — Web layer v1 · <span data-i18n="footerNote">データは端末内のみ・外部送信なし</span></footer>
+
+<script>
+'use strict';
+/* ============================================================
+   RingBlockerCore — pure logic (no DOM access).
+   Delimited by CORE markers so Node tests can extract and run it.
+   ============================================================ */
+/* ==CORE-START== */
+const RingBlockerCore = (() => {
+  const CATEGORIES = ['fraud', 'solicitation', 'sales', 'onering', 'survey', 'other'];
+
+  // Dummy sample data ONLY. Numbers use unassigned 000-patterns and are
+  // format examples, not real subscribers. Flagged sample:true.
+  const SAMPLE_SPAM_DB = [
+    { number: '08000000001', category: 'solicitation', reportCount: 128, lastReported: '2026-10-28', sample: true },
+    { number: '08000000002', category: 'fraud',        reportCount: 342, lastReported: '2026-11-02', sample: true },
+    { number: '05000000003', category: 'fraud',        reportCount: 256, lastReported: '2026-11-05', sample: true },
+    { number: '05000000004', category: 'onering',      reportCount: 89,  lastReported: '2026-09-19', sample: true },
+    { number: '0120000005',  category: 'sales',        reportCount: 87,  lastReported: '2026-10-11', sample: true },
+    { number: '0570000006',  category: 'survey',       reportCount: 41,  lastReported: '2026-08-30', sample: true },
+    { number: '07000000007', category: 'solicitation', reportCount: 173, lastReported: '2026-11-08', sample: true },
+    { number: '0300000008',  category: 'sales',        reportCount: 63,  lastReported: '2026-10-02', sample: true }
+  ];
+
+  function toHalfWidthDigits(s) {
+    return String(s).replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+  }
+
+  function classifyJP(national) {
+    if (/^0800/.test(national) || /^0120/.test(national)) return 'tollfree';
+    if (/^050/.test(national)) return 'ip';
+    if (/^(070|080|090|060)/.test(national)) return 'mobile';
+    if (/^0570/.test(national)) return 'navi';
+    if (/^0\d{9}$/.test(national)) return 'fixedline';
+    return 'other';
+  }
+
+  /**
+   * Normalize a phone number.
+   * Accepts JP domestic (0...), +81..., 0081..., 01081..., and other +CC numbers.
+   * Returns {valid, e164, national, type, country} — never throws.
+   */
+  function normalizePhoneNumber(raw) {
+    const invalid = { valid: false, e164: null, national: null, type: 'invalid', country: null };
+    if (raw === null || raw === undefined) return invalid;
+    let s = toHalfWidthDigits(String(raw)).replace(/[\s\-()．・]/g, '').replace(/＋/g, '+');
+    if (s === '') return invalid;
+    let intl = false;
+    if (s.startsWith('+')) { intl = true; s = s.slice(1); }
+    if (!/^\d+$/.test(s)) return invalid;
+    if (!intl && (s.startsWith('0081') || s.startsWith('01081'))) {
+      s = '81' + s.replace(/^(0081|01081)/, '');
+      intl = true;
+    }
+    if (intl || s.startsWith('81') && s.length >= 12) {
+      if (s.startsWith('81') && s.length >= 11 && s.length <= 13) {
+        const national = '0' + s.slice(2);
+        if (/^0\d{9,10}$/.test(national)) {
+          return { valid: true, e164: '+' + s, national, type: classifyJP(national), country: 'JP' };
+        }
+        return invalid;
+      }
+      // Non-JP international: E.164 allows 7..15 digits total.
+      if (s.length >= 8 && s.length <= 15) {
+        return { valid: true, e164: '+' + s, national: null, type: 'international', country: 'INTL' };
+      }
+      return invalid;
+    }
+    // JP domestic
+    if (/^0\d{9,10}$/.test(s)) {
+      return { valid: true, e164: '+81' + s.slice(1), national: s, type: classifyJP(s), country: 'JP' };
+    }
+    return invalid;
+  }
+
+  /** Human-readable grouping for JP national numbers. */
+  function formatNational(national) {
+    if (!national) return '';
+    const d = String(national);
+    if (d.length === 11) return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
+    if (d.length === 10) {
+      if (/^(0120|0570|0990)/.test(d)) return d.slice(0, 4) + '-' + d.slice(4, 7) + '-' + d.slice(7);
+      if (/^(03|06)/.test(d)) return d.slice(0, 2) + '-' + d.slice(2, 6) + '-' + d.slice(6);
+      return d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6);
+    }
+    return d;
+  }
+
+  /**
+   * Canonicalize a user-entered prefix rule.
+   * "0800" / "0501234" -> national scope; "+8190" -> e164 scope.
+   * Returns {prefix, scope} or null when unusable.
+   */
+  function canonicalPrefixRule(input) {
+    if (input === null || input === undefined) return null;
+    let s = toHalfWidthDigits(String(input)).replace(/[\s\-()]/g, '').replace(/＋/g, '+');
+    let scope = 'national';
+    if (s.startsWith('+')) { scope = 'e164'; s = s.slice(1); }
+    if (!/^\d{3,15}$/.test(s)) return null;
+    if (scope === 'national' && !s.startsWith('0')) return null;
+    if (scope === 'e164' && s.startsWith('0')) return null;
+    return { prefix: s, scope };
+  }
+
+  function countReports(e164, reports) {
+    if (!e164 || !Array.isArray(reports)) return 0;
+    return reports.filter((r) => r && r.number === e164).length;
+  }
+
+  function findSample(e164) {
+    if (!e164) return null;
+    const digits = e164.replace(/^\+/, '');
+    return SAMPLE_SPAM_DB.find((e) => ('81' + e.number.slice(1)) === digits) || null;
+  }
+
+  /**
+   * Judgement. Order: invalid -> allow -> exact block -> prefix block
+   * -> known sample spam (warn) -> reported by user (warn) -> none.
+   * lists = {allow:[e164], blockExact:[e164], prefixes:[{prefix,scope}], reports:[{number,...}]}
+   */
+  function checkNumber(raw, lists, db) {
+    const L = lists || {};
+    const allow = L.allow || [];
+    const blockExact = L.blockExact || [];
+    const prefixes = L.prefixes || [];
+    const reports = L.reports || [];
+    const sampleDb = db || SAMPLE_SPAM_DB;
+
+    const n = (raw && typeof raw === 'object' && 'valid' in raw) ? raw : normalizePhoneNumber(raw);
+    if (!n.valid) return { action: 'invalid', reason: 'invalid-number', normalized: n };
+
+    if (allow.includes(n.e164)) return { action: 'allow', reason: 'allowlist', normalized: n };
+
+    if (blockExact.includes(n.e164)) return { action: 'block', reason: 'blocklist-exact', normalized: n };
+
+    for (const rule of prefixes) {
+      if (!rule) continue;
+      const target = rule.scope === 'e164' ? n.e164.replace(/^\+/, '') : (n.national || '');
+      if (target && target.startsWith(rule.prefix)) {
+        return { action: 'block', reason: 'blocklist-prefix', matchedRule: rule, normalized: n };
+      }
+    }
+
+    const sample = sampleDb.find((e) => ('81' + e.number.slice(1)) === n.e164.replace(/^\+/, ''));
+    if (sample) {
+      return {
+        action: 'warn', reason: 'known-spam', normalized: n,
+        category: sample.category,
+        reportCount: sample.reportCount + countReports(n.e164, reports),
+        sample: true
+      };
+    }
+
+    const own = countReports(n.e164, reports);
+    if (own > 0) {
+      return { action: 'warn', reason: 'reported-by-you', normalized: n, reportCount: own };
+    }
+
+    return { action: 'none', reason: 'no-match', normalized: n, reportCount: 0 };
+  }
+
+  /** Block-list JSON schema v1 (shared with the future Android layer). */
+  function exportBlockList(lists) {
+    const L = lists || {};
+    return JSON.stringify({
+      version: 1,
+      allow: L.allow || [],
+      blockExact: L.blockExact || [],
+      prefixes: L.prefixes || [],
+      reports: L.reports || []
+    }, null, 2);
+  }
+
+  function importBlockList(json) {
+    let obj;
+    try { obj = JSON.parse(json); } catch (e) { throw new Error('invalid JSON'); }
+    if (!obj || obj.version !== 1) throw new Error('unsupported blocklist version');
+    const arr = (v) => (Array.isArray(v) ? v : []);
+    return {
+      allow: arr(obj.allow).filter((x) => typeof x === 'string'),
+      blockExact: arr(obj.blockExact).filter((x) => typeof x === 'string'),
+      prefixes: arr(obj.prefixes).filter((r) => r && typeof r.prefix === 'string' && (r.scope === 'national' || r.scope === 'e164')),
+      reports: arr(obj.reports).filter((r) => r && typeof r.number === 'string')
+    };
+  }
+
+  return {
+    CATEGORIES,
+    SAMPLE_SPAM_DB,
+    normalizePhoneNumber,
+    formatNational,
+    classifyJP,
+    canonicalPrefixRule,
+    countReports,
+    findSample,
+    checkNumber,
+    exportBlockList,
+    importBlockList
+  };
+})();
+/* ==CORE-END== */
+
+/* ============================================================
+   UI layer — DOM + localStorage. All data stays on this device.
+   ============================================================ */
+const I18N = {
+  ja: {
+    appTitle: '迷惑電話ブロック',
+    privacyBanner: 'プライバシー: このアプリは通話履歴や連絡先にアクセスしません。データはすべてこの端末のブラウザ内（localStorage）に保存され、外部へ送信されることはありません。',
+    lookupTitle: '電話番号を調べる',
+    lookupPlaceholder: '電話番号を入力（例: 050-1234-5678 / +81 90-1234-5678）',
+    lookupBtn: '調べる',
+    actBlock: 'ブロックに追加', actAllow: '許可リストに追加', actReport: '通報する',
+    blocklistTitle: 'ブロックリスト',
+    exactTitle: '番号指定（完全一致）', prefixTitle: '前方一致ルール（例: 0800 / 0501234 / +8190）',
+    allowTitle: '許可リスト（ブロックより優先）',
+    numberPlaceholder: '電話番号', addBtn: '追加', deleteBtn: '削除',
+    reportsTitle: '自分の通報履歴', reportsEmpty: 'まだ通報はありません。通報はこの端末内にだけ保存されます。',
+    sampleTitle: 'サンプル迷惑番号データ',
+    sampleNote: '以下はすべてテスト用のダミーデータです。実在の加入者の番号ではありません。',
+    colNumber: '番号', colCategory: '種別', colReports: '通報数', colLast: '最終通報',
+    dataTitle: 'データの書き出し / 読み込み',
+    dataNote: 'ブロックリストを JSON（スキーマ v1）で書き出せます。将来の Android 版（CallScreeningService）が同じ形式・同じ判定順序を使います。',
+    exportBtn: 'JSON を書き出す', importBtn: 'JSON を読み込む',
+    footerNote: 'データは端末内のみ・外部送信なし',
+    verdictBlock: 'ブロック対象', verdictWarn: '迷惑電話の可能性', verdictAllow: '許可リスト登録済み',
+    verdictNone: '登録なし', verdictInvalid: '番号の形式が正しくありません',
+    reasonAllowlist: '許可リストに一致', reasonBlockExact: 'ブロックリスト（完全一致）に一致',
+    reasonBlockPrefix: '前方一致ルールに一致', reasonKnown: '既知の迷惑番号データ（サンプル）に一致',
+    reasonOwn: 'あなたが通報した番号です', reasonNone: 'ブロックリスト・既知データに一致しませんでした',
+    labelNumber: '番号', labelType: '種別', labelCategory: '迷惑種別', labelReports: '通報数',
+    sampleBadge: 'サンプル',
+    typeTollfree: 'フリーダイヤル', typeIp: 'IP電話', typeMobile: '携帯電話', typeNavi: 'ナビダイヤル',
+    typeFixedline: '固定電話', typeInternational: '国際番号', typeOther: 'その他', typeInvalid: '不明',
+    catFraud: '詐欺の疑い', catSolicitation: '勧誘', catSales: '営業', catOnering: 'ワン切り',
+    catSurvey: 'アンケート', catOther: 'その他',
+    stats: (a, b, c) => `ブロック ${a} 件 / 前方一致 ${b} 件 / 通報 ${c} 件`,
+    addedMsg: '追加しました', removedMsg: '削除しました', reportedMsg: '通報を記録しました（端末内のみ）',
+    invalidMsg: '番号の形式が正しくありません', dupMsg: 'すでに登録されています',
+    importOk: '読み込みました', importNg: '読み込めませんでした: '
+  },
+  en: {
+    appTitle: 'Spam Call Blocker',
+    privacyBanner: 'Privacy: this app never accesses your call history or contacts. All data stays in this browser (localStorage) on this device and is never sent anywhere.',
+    lookupTitle: 'Look up a number',
+    lookupPlaceholder: 'Enter a phone number (e.g. 050-1234-5678 / +81 90-1234-5678)',
+    lookupBtn: 'Look up',
+    actBlock: 'Add to block list', actAllow: 'Add to allow list', actReport: 'Report',
+    blocklistTitle: 'Block list',
+    exactTitle: 'Exact numbers', prefixTitle: 'Prefix rules (e.g. 0800 / 0501234 / +8190)',
+    allowTitle: 'Allow list (wins over block list)',
+    numberPlaceholder: 'Phone number', addBtn: 'Add', deleteBtn: 'Delete',
+    reportsTitle: 'Your reports', reportsEmpty: 'No reports yet. Reports are stored only on this device.',
+    sampleTitle: 'Sample spam-number data',
+    sampleNote: 'Everything below is dummy test data. None of these are real subscribers\' numbers.',
+    colNumber: 'Number', colCategory: 'Category', colReports: 'Reports', colLast: 'Last reported',
+    dataTitle: 'Export / Import',
+    dataNote: 'Export your block list as JSON (schema v1). The future Android app (CallScreeningService) uses the same format and the same judgement order.',
+    exportBtn: 'Export JSON', importBtn: 'Import JSON',
+    footerNote: 'On-device data only · nothing is sent externally',
+    verdictBlock: 'Blocked', verdictWarn: 'Possible spam', verdictAllow: 'On allow list',
+    verdictNone: 'Not listed', verdictInvalid: 'Invalid number format',
+    reasonAllowlist: 'Matches the allow list', reasonBlockExact: 'Matches the block list (exact)',
+    reasonBlockPrefix: 'Matches a prefix rule', reasonKnown: 'Matches known spam data (sample)',
+    reasonOwn: 'You reported this number', reasonNone: 'No match in block list or known data',
+    labelNumber: 'Number', labelType: 'Type', labelCategory: 'Category', labelReports: 'Reports',
+    sampleBadge: 'SAMPLE',
+    typeTollfree: 'Toll-free', typeIp: 'IP phone', typeMobile: 'Mobile', typeNavi: 'Navi dial',
+    typeFixedline: 'Landline', typeInternational: 'International', typeOther: 'Other', typeInvalid: 'Unknown',
+    catFraud: 'Suspected fraud', catSolicitation: 'Solicitation', catSales: 'Sales', catOnering: 'One-ring',
+    catSurvey: 'Survey', catOther: 'Other',
+    stats: (a, b, c) => `${a} blocked / ${b} prefix rules / ${c} reports`,
+    addedMsg: 'Added', removedMsg: 'Removed', reportedMsg: 'Report saved (on this device only)',
+    invalidMsg: 'Invalid number format', dupMsg: 'Already registered',
+    importOk: 'Imported', importNg: 'Import failed: '
+  }
+};
+
+const STORE_KEY = 'ring-blocker:v1';
+const LANG_KEY = 'ring-blocker:lang';
+let lang = localStorage.getItem(LANG_KEY) || 'ja';
+if (!I18N[lang]) lang = 'ja';
+
+function emptyState() { return { allow: [], blockExact: [], prefixes: [], reports: [] }; }
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return emptyState();
+    return RingBlockerCore.importBlockList(raw);
+  } catch (e) { return emptyState(); }
+}
+let state = loadState();
+function saveState() {
+  localStorage.setItem(STORE_KEY, RingBlockerCore.exportBlockList(state));
+  renderLists();
+}
+
+const t = (k) => I18N[lang][k] || k;
+const $ = (id) => document.getElementById(id);
+
+function typeLabel(type) {
+  return t('type' + type.charAt(0).toUpperCase() + type.slice(1)) || type;
+}
+function catLabel(cat) {
+  return t('cat' + cat.charAt(0).toUpperCase() + cat.slice(1)) || cat;
+}
+
+function applyI18n() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  $('langToggle').textContent = lang === 'ja' ? 'EN' : '日本語';
+  const sel = $('reportCategory');
+  sel.innerHTML = '';
+  RingBlockerCore.CATEGORIES.forEach((c) => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = catLabel(c);
+    sel.appendChild(o);
+  });
+  renderSample();
+  renderLists();
+}
+
+function renderSample() {
+  const body = $('sampleBody');
+  body.innerHTML = '';
+  RingBlockerCore.SAMPLE_SPAM_DB.forEach((e) => {
+    const tr = document.createElement('tr');
+    const disp = RingBlockerCore.formatNational(e.number);
+    tr.innerHTML = '';
+    const td1 = document.createElement('td');
+    td1.textContent = disp + ' ';
+    const b = document.createElement('span');
+    b.className = 'badge'; b.textContent = t('sampleBadge');
+    td1.appendChild(b);
+    const td2 = document.createElement('td'); td2.textContent = catLabel(e.category);
+    const td3 = document.createElement('td'); td3.textContent = String(e.reportCount);
+    const td4 = document.createElement('td'); td4.textContent = e.lastReported;
+    tr.append(td1, td2, td3, td4);
+    body.appendChild(tr);
+  });
+}
+
+function listItem(text, onDelete) {
+  const li = document.createElement('li');
+  const span = document.createElement('span');
+  span.className = 'grow'; span.textContent = text;
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'danger'; btn.textContent = t('deleteBtn');
+  btn.addEventListener('click', onDelete);
+  li.append(span, btn);
+  return li;
+}
+
+function renderLists() {
+  const ex = $('exactList'); ex.innerHTML = '';
+  state.blockExact.forEach((e164, i) => {
+    const n = RingBlockerCore.normalizePhoneNumber(e164);
+    const disp = n.national ? RingBlockerCore.formatNational(n.national) : e164;
+    ex.appendChild(listItem(disp + ' (' + e164 + ')', () => { state.blockExact.splice(i, 1); saveState(); }));
+  });
+  const pf = $('prefixList'); pf.innerHTML = '';
+  state.prefixes.forEach((r, i) => {
+    const disp = (r.scope === 'e164' ? '+' : '') + r.prefix + '*';
+    pf.appendChild(listItem(disp, () => { state.prefixes.splice(i, 1); saveState(); }));
+  });
+  const al = $('allowList'); al.innerHTML = '';
+  state.allow.forEach((e164, i) => {
+    const n = RingBlockerCore.normalizePhoneNumber(e164);
+    const disp = n.national ? RingBlockerCore.formatNational(n.national) : e164;
+    al.appendChild(listItem(disp + ' (' + e164 + ')', () => { state.allow.splice(i, 1); saveState(); }));
+  });
+  const rp = $('reportList'); rp.innerHTML = '';
+  $('reportEmpty').style.display = state.reports.length ? 'none' : '';
+  state.reports.slice().reverse().forEach((r) => {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.className = 'grow';
+    const n = RingBlockerCore.normalizePhoneNumber(r.number);
+    const disp = n.national ? RingBlockerCore.formatNational(n.national) : r.number;
+    span.textContent = disp + ' — ' + catLabel(r.category || 'other') + ' · ' + new Date(r.ts).toLocaleString();
+    li.appendChild(span);
+    rp.appendChild(li);
+  });
+  $('statsLine').textContent = t('stats')(state.blockExact.length, state.prefixes.length, state.reports.length);
+}
+
+let lastLookup = null;
+
+function doLookup() {
+  const raw = $('lookupInput').value;
+  const res = RingBlockerCore.checkNumber(raw, state);
+  lastLookup = res.normalized && res.normalized.valid ? res.normalized : null;
+  const box = $('lookupResult');
+  box.classList.remove('hidden');
+  const verdictKey = { block: 'verdictBlock', warn: 'verdictWarn', allow: 'verdictAllow', none: 'verdictNone', invalid: 'verdictInvalid' }[res.action];
+  const reasonKey = {
+    'allowlist': 'reasonAllowlist', 'blocklist-exact': 'reasonBlockExact', 'blocklist-prefix': 'reasonBlockPrefix',
+    'known-spam': 'reasonKnown', 'reported-by-you': 'reasonOwn', 'no-match': 'reasonNone', 'invalid-number': 'invalidMsg'
+  }[res.reason];
+  box.innerHTML = '';
+  const chip = document.createElement('span');
+  chip.className = 'chip ' + res.action;
+  chip.textContent = t(verdictKey);
+  box.appendChild(chip);
+  if (res.normalized && res.normalized.valid) {
+    const dl = document.createElement('dl');
+    dl.className = 'kv';
+    const rows = [
+      [t('labelNumber'), (res.normalized.national ? RingBlockerCore.formatNational(res.normalized.national) : res.normalized.e164) + ' (' + res.normalized.e164 + ')'],
+      [t('labelType'), typeLabel(res.normalized.type)]
+    ];
+    if (res.category) rows.push([t('labelCategory'), catLabel(res.category) + (res.sample ? ' · ' + t('sampleBadge') : '')]);
+    if (typeof res.reportCount === 'number') rows.push([t('labelReports'), String(res.reportCount)]);
+    rows.push([t('labelNumber') === '番号' ? '理由' : 'Reason', t(reasonKey)]);
+    rows.forEach(([k, v]) => {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      dl.append(dt, dd);
+    });
+    box.appendChild(dl);
+    $('lookupActions').classList.remove('hidden');
+  } else {
+    const p = document.createElement('p');
+    p.textContent = t('invalidMsg');
+    box.appendChild(p);
+    $('lookupActions').classList.add('hidden');
+  }
+}
+
+function addExactFrom(inputId, listName) {
+  const input = $(inputId);
+  const n = RingBlockerCore.normalizePhoneNumber(input.value);
+  if (!n.valid) { alert(t('invalidMsg')); return; }
+  if (state[listName].includes(n.e164)) { alert(t('dupMsg')); return; }
+  state[listName].push(n.e164);
+  input.value = '';
+  saveState();
+}
+
+function addPrefix() {
+  const rule = RingBlockerCore.canonicalPrefixRule($('prefixInput').value);
+  if (!rule) { alert(t('invalidMsg')); return; }
+  if (state.prefixes.some((r) => r.prefix === rule.prefix && r.scope === rule.scope)) { alert(t('dupMsg')); return; }
+  state.prefixes.push(rule);
+  $('prefixInput').value = '';
+  saveState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  applyI18n();
+  $('langToggle').addEventListener('click', () => {
+    lang = lang === 'ja' ? 'en' : 'ja';
+    localStorage.setItem(LANG_KEY, lang);
+    applyI18n();
+    if (lastLookup) doLookup();
+  });
+  $('lookupBtn').addEventListener('click', doLookup);
+  $('lookupInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLookup(); });
+  $('exactAdd').addEventListener('click', () => addExactFrom('exactInput', 'blockExact'));
+  $('allowAdd').addEventListener('click', () => addExactFrom('allowInput', 'allow'));
+  $('prefixAdd').addEventListener('click', addPrefix);
+  $('actBlock').addEventListener('click', () => {
+    if (!lastLookup) return;
+    if (!state.blockExact.includes(lastLookup.e164)) { state.blockExact.push(lastLookup.e164); saveState(); }
+    doLookup();
+  });
+  $('actAllow').addEventListener('click', () => {
+    if (!lastLookup) return;
+    if (!state.allow.includes(lastLookup.e164)) { state.allow.push(lastLookup.e164); saveState(); }
+    doLookup();
+  });
+  $('actReport').addEventListener('click', () => {
+    if (!lastLookup) return;
+    state.reports.push({ number: lastLookup.e164, category: $('reportCategory').value, note: '', ts: Date.now() });
+    saveState();
+    alert(t('reportedMsg'));
+    doLookup();
+  });
+  $('exportBtn').addEventListener('click', () => {
+    $('dataArea').value = RingBlockerCore.exportBlockList(state);
+  });
+  $('importBtn').addEventListener('click', () => {
+    try {
+      state = RingBlockerCore.importBlockList($('dataArea').value);
+      saveState();
+      alert(t('importOk'));
+    } catch (e) {
+      alert(t('importNg') + e.message);
+    }
+  });
+});
+</script>
+</body>
+</html>

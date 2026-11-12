@@ -1,5 +1,7 @@
 # WebRTC Call Recorder - OSS
 
+> **新しい方向（2026-11-12 決定）**: Ring は「携帯用迷惑電話ブロックアプリ」として開発を続けます（Android 先行、Apple Developer 登録なし）。Web アプリ層は [spam-blocker/](spam-blocker/) に実装済みです。本 README の通話録音システムも削除せず残しています。
+
 グローバル対応の VoIP 通話録音アプリケーション（オープンソース）
 
 **ステータス**: v0.2.0 Beta (Phase 3 完了 - Production Ready)
