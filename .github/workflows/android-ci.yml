@@ -1,0 +1,70 @@
+name: Android CI (spam-blocker)
+
+# Builds the native Android layer in spam-blocker/android.
+# The repo does not ship gradlew / gradle-wrapper.jar, so Gradle is
+# provisioned with gradle/actions/setup-gradle at the exact version the
+# wrapper properties pin (8.7, required by AGP 8.5.2).
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'spam-blocker/android/**'
+      - '.github/workflows/android-ci.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'spam-blocker/android/**'
+      - '.github/workflows/android-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: spam-blocker/android
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      # The golden-vector suite (SpamJudgeTest.kt, 107 checks) is
+      # intentionally JUnit-free so it can run on a plain JDK; execute it
+      # through the repo's own harness with the project's Kotlin version.
+      - name: Install Kotlin compiler 2.0.21
+        working-directory: ${{ github.workspace }}
+        run: |
+          curl -sSL -o /tmp/kotlin-compiler.zip \
+            https://github.com/JetBrains/kotlin/releases/download/v2.0.21/kotlin-compiler-2.0.21.zip
+          unzip -q /tmp/kotlin-compiler.zip -d /tmp
+          echo "/tmp/kotlinc/bin" >> "$GITHUB_PATH"
+
+      - name: Run golden-vector tests (kotlinc harness)
+        run: ./run-tests.sh
+
+      # testDebugUnitTest compiles the test source set against the SDK;
+      # assembleDebug produces the APK itself.
+      - name: Build debug APK
+        run: gradle :app:testDebugUnitTest :app:assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ring-spam-blocker-debug-apk
+          path: spam-blocker/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
