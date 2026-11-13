@@ -294,10 +294,10 @@ Add to top of README.md:
 ```markdown
 # WebRTC Call Recorder
 
-![GitHub](https://img.shields.io/github/license/your-org/webrtc-call-recorder)
-![GitHub package.json version](https://img.shields.io/github/package-json/v/your-org/webrtc-call-recorder)
-[![CI](https://github.com/your-org/webrtc-call-recorder/actions/workflows/server-ci.yml/badge.svg)](https://github.com/your-org/webrtc-call-recorder/actions)
-[![codecov](https://codecov.io/gh/your-org/webrtc-call-recorder/branch/main/graph/badge.svg)](https://codecov.io/gh/your-org/webrtc-call-recorder)
+![GitHub](https://img.shields.io/github/license/shizukutanaka/Ring)
+![GitHub package.json version](https://img.shields.io/github/package-json/v/shizukutanaka/Ring)
+[![CI](https://github.com/shizukutanaka/Ring/actions/workflows/server-ci.yml/badge.svg)](https://github.com/shizukutanaka/Ring/actions)
+[![codecov](https://codecov.io/gh/shizukutanaka/Ring/branch/main/graph/badge.svg)](https://codecov.io/gh/shizukutanaka/Ring)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ```
@@ -385,7 +385,7 @@ Click the "Fork" button on the repository page.
 ## Step 2: Clone Your Fork
 \`\`\`bash
 git clone https://github.com/YOUR-USERNAME/webrtc-call-recorder.git
-cd webrtc-call-recorder
+cd Ring
 \`\`\`
 
 ## Step 3: Create a Branch

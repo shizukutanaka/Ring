@@ -6,7 +6,7 @@ If you discover a security vulnerability in the WebRTC Call Recorder, please **d
 
 ### How to Report
 
-1. Go to the [Security Advisories](https://github.com/your-org/webrtc-call-recorder/security/advisories) page
+1. Go to the [Security Advisories](https://github.com/shizukutanaka/Ring/security/advisories) page
 2. Click "Report a vulnerability"
 3. Provide details about the vulnerability:
    - Type of vulnerability (e.g., XSS, SQL Injection, Authentication bypass)

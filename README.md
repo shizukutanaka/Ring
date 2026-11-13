@@ -79,8 +79,8 @@ webrtc-call-recorder/
 
 ```bash
 # リポジトリクローン
-git clone https://github.com/your-org/webrtc-call-recorder.git
-cd webrtc-call-recorder
+git clone https://github.com/shizukutanaka/Ring.git
+cd Ring
 
 # サーバ起動
 cd server
@@ -146,8 +146,8 @@ npx http-server . -p 8080
 
 ## サポート・問題報告
 
-- **バグ報告**: [GitHub Issues](https://github.com/your-org/webrtc-call-recorder/issues)
-- **機能リクエスト**: [GitHub Discussions](https://github.com/your-org/webrtc-call-recorder/discussions)
+- **バグ報告**: [GitHub Issues](https://github.com/shizukutanaka/Ring/issues)
+- **機能リクエスト**: [GitHub Discussions](https://github.com/shizukutanaka/Ring/discussions)
 - **セキュリティ**: [SECURITY.md](./SECURITY.md)
 
 ---

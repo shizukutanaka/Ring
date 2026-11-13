@@ -12,8 +12,8 @@ Get the WebRTC Call Recorder up and running in 5 minutes.
 ## Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/webrtc-call-recorder.git
-cd webrtc-call-recorder
+git clone https://github.com/shizukutanaka/Ring.git
+cd Ring
 ```
 
 ## Step 2: Start PostgreSQL
@@ -110,7 +110,7 @@ npm start -- --reset-cache
 
 ## Need Help?
 
-- Check [GitHub Issues](https://github.com/your-org/webrtc-call-recorder/issues)
+- Check [GitHub Issues](https://github.com/shizukutanaka/Ring/issues)
 - Read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs
 

@@ -94,8 +94,8 @@ webrtc-call-recorder/
 
 ```bash
 # 1. Clone repo
-git clone https://github.com/your-org/webrtc-call-recorder.git
-cd webrtc-call-recorder
+git clone https://github.com/shizukutanaka/Ring.git
+cd Ring
 
 # 2. Start server
 cd server
@@ -343,8 +343,8 @@ See **[docs/API.md](docs/API.md)** for integration examples.
 - **Development**: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
 ### Community
-- **Issues**: [GitHub Issues](https://github.com/your-org/webrtc-call-recorder/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/webrtc-call-recorder/discussions)
+- **Issues**: [GitHub Issues](https://github.com/shizukutanaka/Ring/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/shizukutanaka/Ring/discussions)
 - **Security**: [SECURITY.md](SECURITY.md)
 
 ### Contributing

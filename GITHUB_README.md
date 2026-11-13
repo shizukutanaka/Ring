@@ -57,7 +57,7 @@ This document confirms the project is production-ready for publishing on GitHub.
 ```bash
 # Clone the repository
 git clone https://github.com/YOUR-ORG/webrtc-call-recorder.git
-cd webrtc-call-recorder
+cd Ring
 
 # Start reading
 cat GETTING_STARTED.md  # Choose your path

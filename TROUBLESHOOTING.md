@@ -689,7 +689,7 @@ io.on('connection', (socket) => {
 
 ```bash
 # GitHub Issues
-https://github.com/your-org/webrtc-call-recorder/issues
+https://github.com/shizukutanaka/Ring/issues
 
 # Search by error message or component
 # Example: "Port 3000 already in use"
@@ -736,4 +736,4 @@ uname -a > system-info.txt
 
 **Last Updated**: 2025-11-17
 
-Need more help? Check [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) or create a [GitHub Issue](https://github.com/your-org/webrtc-call-recorder/issues).
+Need more help? Check [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) or create a [GitHub Issue](https://github.com/shizukutanaka/Ring/issues).

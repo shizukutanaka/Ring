@@ -15,8 +15,8 @@ WebRTC Call Recorder の開発環境セットアップと開発ワークフロ�
 ### 1. リポジトリをクローン
 
 ```bash
-git clone https://github.com/your-org/webrtc-call-recorder.git
-cd webrtc-call-recorder
+git clone https://github.com/shizukutanaka/Ring.git
+cd Ring
 ```
 
 ### 2. 依存関係をインストール
@@ -356,9 +356,9 @@ Closes #123
 
 ## 🤝 問題が発生した場合
 
-1. [GitHub Issues](https://github.com/your-org/webrtc-call-recorder/issues) を検索
+1. [GitHub Issues](https://github.com/shizukutanaka/Ring/issues) を検索
 2. [Discord](https://discord.gg/example) で質問（あれば）
-3. [Discussions](https://github.com/your-org/webrtc-call-recorder/discussions) で提案
+3. [Discussions](https://github.com/shizukutanaka/Ring/discussions) で提案
 
 ## 📋 チェックリスト：PR を提出する前に
 
