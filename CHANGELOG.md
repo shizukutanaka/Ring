@@ -171,4 +171,4 @@ To create a new release:
 
 ---
 
-For information about each version, see the [Releases](https://github.com/your-org/webrtc-call-recorder/releases) page.
+For information about each version, see the [Releases](https://github.com/shizukutanaka/Ring/releases) page.

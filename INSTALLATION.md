@@ -111,8 +111,8 @@ docker run -d \
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/webrtc-call-recorder.git
-cd webrtc-call-recorder/server
+git clone https://github.com/shizukutanaka/Ring.git
+cd Ring/server
 
 # Install dependencies
 npm install
@@ -460,4 +460,4 @@ npm install
 
 ---
 
-**Need help?** Check [GitHub Issues](https://github.com/your-org/webrtc-call-recorder/issues) or see [CONTRIBUTING.md](CONTRIBUTING.md).
+**Need help?** Check [GitHub Issues](https://github.com/shizukutanaka/Ring/issues) or see [CONTRIBUTING.md](CONTRIBUTING.md).

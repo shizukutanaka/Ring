@@ -224,7 +224,7 @@
 
 1. **Create GitHub Repository**
    ```bash
-   git remote add origin https://github.com/your-org/webrtc-call-recorder.git
+   git remote add origin https://github.com/shizukutanaka/Ring.git
    git push -u origin main
    ```
 

@@ -12,8 +12,8 @@
 ### ステップ 2: リポジトリをクローン
 
 ```bash
-git clone https://github.com/your-org/webrtc-call-recorder.git
-cd webrtc-call-recorder
+git clone https://github.com/shizukutanaka/Ring.git
+cd Ring
 ```
 
 ### ステップ 3: PostgreSQL データベース作成

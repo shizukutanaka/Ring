@@ -408,7 +408,7 @@ To contribute improvements to the SDK:
 
 - [API Documentation](../docs/API.md)
 - [Getting Started](../GETTING_STARTED.md)
-- [GitHub Issues](https://github.com/your-org/webrtc-call-recorder/issues)
+- [GitHub Issues](https://github.com/shizukutanaka/Ring/issues)
 
 ---
 

@@ -240,7 +240,7 @@ serverless deploy
 
 ## 🔗 重要なリンク
 
-- **GitHub**: [your-org/webrtc-call-recorder](https://github.com/)
+- **GitHub**: [shizukutanaka/Ring](https://github.com/shizukutanaka/Ring)
 - **ドキュメント**: [docs/](./docs/)
 - **法規要件**: [LEGAL.md](./docs/LEGAL.md)
 - **セキュリティ**: [SECURITY.md](./SECURITY.md)

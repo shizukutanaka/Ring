@@ -6,7 +6,7 @@ Ring の新しいプロダクト方向として、2026-11-12 に所有者が決�
 方針:
 
 - **Android 先行**。Apple Developer Program には登録しない決定（2026-11-12）のため、iOS の実機向け配布は対象外です。
-- 構成は2層です。今回実装したのは **Web アプリ層**。**ネイティブ層**（Android の通話スクリーニング）は設計と接続仕様までで、実装は次段階です。
+- 構成は2層です。**Web アプリ層**と**ネイティブ層**（Android の通話スクリーニング）の両方を実装済みです。ただし Android 側は APK ビルド（assembleDebug）と実機動作が未検証です（検証状況の正本は `android/README.md`）。
 
 ## Web アプリ層（実装済み）
 
@@ -50,11 +50,11 @@ Web 層とネイティブ層の共通契約です。判定ロジック（正規�
 - `prefixes`: 前方一致ルール。`scope: "national"` は国内形式（0始まり）の先頭一致、`scope: "e164"` は国番号を含む数字列の先頭一致
 - `reports`: 通報記録。`number` は E.164、`category` は `fraud | solicitation | sales | onering | survey | other`
 
-## ネイティブ層（設計のみ・未実装）
+## ネイティブ層（Android・実装済み）
 
 Android の `CallScreeningService` が本丸です。着信時に OS から番号を受け取り、上記スキーマ v1 のブロックリストで Web 層と **同じ判定順序** を適用し、ブロック対象は着信を拒否します。
 
-本 repo には現時点でネイティブ Android（Gradle）プロジェクトが存在しない（`mobile/` は従来製品の React Native）ため、今回は Android プロジェクトの新規作成を行わず、設計をここに固定します。
+実装は `android/` の Gradle プロジェクトです（本体は `android/app/src/main/java/app/ring/spamblocker/`）。以下は設計要点であり、実装はこの設計に沿っています。ビルド方法と検証状況は `android/README.md` を参照してください。
 
 設計要点:
 
@@ -63,7 +63,7 @@ Android の `CallScreeningService` が本丸です。着信時に OS から番�
 - ブロックリストの供給: 当面は Web 層から書き出した JSON v1 をアプリへ読み込む方式。将来的な同期も、外部送信を伴う場合はオプトイン設計にする
 - 判定が `block` の場合のみ `setDisallowCall(true)` + `setRejectCall(true)` で拒否。`warn` は OS 側で拒否せず、着信後にアプリ内通知で知らせる（CallScreeningService は着信中 UI を持たないため）
 
-骨格（Kotlin、設計参考。未実装・未ビルド）:
+実装の抜粋（Kotlin、`android/app/src/main/java/app/ring/spamblocker/RingCallScreeningService.kt`）:
 
 ```kotlin
 class RingCallScreeningService : CallScreeningService() {
@@ -83,11 +83,12 @@ class RingCallScreeningService : CallScreeningService() {
 }
 ```
 
-AndroidManifest への宣言（設計参考）:
+AndroidManifest への宣言（`android/app/src/main/AndroidManifest.xml`、抜粋）:
 
 ```xml
 <service
     android:name=".RingCallScreeningService"
+    android:exported="true"
     android:permission="android.permission.BIND_SCREENING_SERVICE">
     <intent-filter>
         <action android:name="android.telecom.CallScreeningService" />
@@ -105,8 +106,11 @@ node tests/spam-blocker.test.js
 
 42 件（正規化・整形・前方一致ルール・判定順序・サンプルデータ整合性・JSON スキーマ往復・外部リソース不使用とプライバシー文言の構造保証）。全通過を確認済み。
 
+Android 側の判定エンジン（Android 非依存の純 Kotlin）も、Web 層と同一のテストベクタで検証しています（`android/run-tests.sh`、単体テスト 107 件全通過。詳細は `android/README.md`）。
+
 ## 既知の制限と次段階
 
-- Web 層は着信そのものを止めることはできません（ブラウザの制約）。実際のブロックはネイティブ層の実装待ちです
+- Web 層は着信そのものを止めることはできません（ブラウザの制約）。実際のブロックはネイティブ層が担います
+- Android 側は判定エンジンの単体テスト（107 件）と android.jar（API 34）に対するコンパイル確認まで検証済みですが、**APK ビルド（assembleDebug）と実機動作は未検証**です（経緯と理由は `android/README.md` の「検証状況」参照）
 - 迷惑番号データは現在サンプル（ダミー）のみ。実データの調達方法は未定
-- 次段階: ネイティブ Android プロジェクト新設、`SpamJudge` の Kotlin 実装と Web 層との適合テスト（同一入力 → 同一判定のゴールデンベクタ共有）
+- 次段階: APK ビルドの実地確認、実機での役割取得・実着信ブロックの確認

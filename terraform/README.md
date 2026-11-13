@@ -379,7 +379,7 @@ terraform apply -var-file=prod.tfvars
 ```bash
 # Reference modules in another project
 module "webrtc_infrastructure" {
-  source = "git::https://github.com/your-org/webrtc-recorder//terraform"
+  source = "git::https://github.com/shizukutanaka/Ring//terraform"
 
   environment = "prod"
   app_name    = "webrtc-recorder"

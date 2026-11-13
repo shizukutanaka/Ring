@@ -562,8 +562,8 @@ tar -czf /backups/app_backup_$(date +%s).tar.gz /opt/webrtc-recorder
 # Phase 3: Download and verify
 echo "[Phase 3] Downloading new version..."
 cd /tmp
-git clone --branch $TARGET_VERSION https://github.com/your-org/webrtc-call-recorder.git
-cd webrtc-call-recorder
+git clone --branch $TARGET_VERSION https://github.com/shizukutanaka/Ring.git
+cd Ring
 
 # Verify integrity
 npm test

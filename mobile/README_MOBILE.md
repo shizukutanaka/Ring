@@ -212,7 +212,7 @@ REACT_APP_LOG_LEVEL=debug
 
 ## Support
 
-- GitHub: https://github.com/your-org/webrtc-recorder
+- GitHub: https://github.com/shizukutanaka/Ring
 - Email: support@example.com
 - Documentation: See docs/ folder
 
