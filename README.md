@@ -1,3 +1,11 @@
+## このリポジトリについて（統合のお知らせ）
+
+このリポジトリの迷惑電話ブロック機能は、**Orange**（https://github.com/shizukutanaka/Orange）に統合されました。今後の開発は Orange で行われます。
+
+- **移行方法**：Ring（Web 版）の設定からブロックリストを JSON で書き出し、Orange の「設定 → ブロックリストの入出力 → クリップボードから読み込む」で取り込めます。前方一致ルールと個別ブロック番号が移行できます（許可リストと通報履歴は Orange に対応する仕組みがないため移行されません。読み込み時に件数が表示されます）。
+- **通話録音システム**（server／mobile／client）は迷惑電話ブロックとは別の製品であり、このリポジトリにそのまま残ります。統合の対象ではありません。
+- 統合の設計判断の記録は Orange の `docs/adr/013-ring-consolidation-prefix-rules.md` にあります。
+
 # WebRTC Call Recorder - OSS
 
 > **新しい方向（2026-11-12 決定）**: Ring は「携帯用迷惑電話ブロックアプリ」として開発を続けます（Android 先行、Apple Developer 登録なし）。Web アプリ層は [spam-blocker/](spam-blocker/) に実装済みです。本 README の通話録音システムも削除せず残しています。
